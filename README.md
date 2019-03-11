@@ -1,5 +1,7 @@
 # Community
 
+We are using the community repo to track issues and requests for Open Distro for Elasticsearch, that are not covered by the existing repos that support the project. We welcome your ideas and suggestions for features or enhancements. 
+
 ## Code of Conduct
 
 This project has adopted an [Open Source Code of Conduct](https://opendistro.github.io/for-elasticsearch/codeofconduct.html).
