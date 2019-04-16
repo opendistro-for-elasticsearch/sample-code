@@ -1,0 +1,76 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: kibana
+  labels:
+    component: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+     component: kibana
+  template:
+    metadata:
+      labels:
+        component: kibana
+    spec:
+      containers:
+      - name: kibana
+        # Official Image from Open Distro Team
+        image: amazon/opendistro-for-elasticsearch-kibana:0.8.0
+        env:
+        - name: CLUSTER_NAME
+          value: logs
+        - name: ELASTICSEARCH_USERNAME
+          value: kibanaserver
+        # Replace with password chosen during cluster initialization
+        - name: ELASTICSEARCH_PASSWORD
+          value: <PASSWORD_CHOSEN_DURING_CLUSTER_INITIALIZATION>
+        # Replace with key passphrase for key used to generate Kibana TLS cert
+        - name: KEY_PASSPHRASE
+          value: <PASSPHRASE_FOR_KIBANA_TLS_PRIVATE_KEY>
+        # 32-character random string to be used as cookie password by security plugin
+        - name: COOKIE_PASS
+          value: <COOKIE_PASS_FOR_SECURITY_PLUGIN_32CHARS>
+        resources:
+          limits:
+            cpu: 4
+            memory: 16Gi
+          requests:
+            cpu: 4
+            memory: 16Gi
+        readinessProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        ports:
+        - containerPort: 5601
+          name: http
+        volumeMounts:
+        - mountPath: /usr/share/kibana/config/kibana.yml
+          name: config
+          subPath: kibana.yml
+        - mountPath: /usr/share/kibana/config/elk-crt.pem
+          name: config
+          subPath: elk-crt.pem
+        - mountPath: /usr/share/kibana/config/elk-key.pem
+          name: config
+          subPath: elk-key.pem
+        - mountPath: /usr/share/kibana/config/elk-root-ca.pem
+          name: config
+          subPath: elk-root-ca.pem
+      volumes:
+      - name: config
+        configMap:
+          name: kibana

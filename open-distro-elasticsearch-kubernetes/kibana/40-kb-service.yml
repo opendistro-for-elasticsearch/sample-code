@@ -1,0 +1,35 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: kibana
+  namespace: kibana
+  labels:
+    app: kibana
+  annotations:
+    # Service external-dns has to be deployed for this A record to be created in AWS Route53
+    external-dns.alpha.kubernetes.io/hostname: kibana.sec.example.com
+
+    # Use ACM cert that is authorized for domain chosen above
+    # Replace with ARN of the working ACM cert
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:111222333444:certificate/7ace9dc0-84fb-4eb6-b70b-059fc489cd20"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "https"
+
+    # Maps traffic to 443
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+
+    # You may want to increment ELB idle conn timeout for problems with WebSockets and Server-Side Events
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: '3600'
+spec:
+  loadBalancerSourceRanges:
+    # Open to the world since Kibana is now auth-ed
+    - 0.0.0.0/0
+  type: LoadBalancer
+  selector:
+    component: kibana
+  ports:
+  - name: https
+    port: 443
+    targetPort: 5601

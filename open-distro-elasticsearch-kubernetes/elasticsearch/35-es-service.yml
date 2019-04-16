@@ -1,0 +1,41 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    # Service external-dns has to be deployed for this A record to be created in AWS Route53
+    external-dns.alpha.kubernetes.io/hostname: elk.sec.example.com
+
+    # Defined ELB backend protocol as HTTPS to allow connection to Elasticsearch API
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
+
+    # ARN of ACM certificate registered to the deployed ELB for handling connections over TLS
+    # ACM certificate should be issued to the DNS hostname defined earlier (elk.sec.example.com)
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:111222333444:certificate/c69f6022-b24f-43d9-b9c8-dfe288d9443d"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-timeout: "60"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+
+    # Annotation to create internal only ELB
+    service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+  labels:
+    component: elasticsearch
+    role: client
+  name: elasticsearch
+  namespace: elasticsearch
+spec:
+  ports:
+    - name: http
+      port: 9200
+    - name: transport
+      port: 9300
+    - name: metrics
+      port: 9600
+  selector:
+    component: elasticsearch
+    role: client
+  type: LoadBalancer
