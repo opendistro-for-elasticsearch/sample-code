@@ -1,0 +1,156 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+    component: elasticsearch
+    role: data
+  name: es-data
+  namespace: elasticsearch
+spec:
+  serviceName: elasticsearch-data
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        component: elasticsearch
+        role: data
+      annotations:
+        iam.amazonaws.com/role: <ARN_OF_IAM_ROLE_FOR_CONTAINER>
+    spec:
+      # Add toleration for not scheduling on dedicated node
+      tolerations:
+      - key: dedicated
+        value: "true"
+        effect: NoSchedule
+      initContainers:
+      - name: init-sysctl
+        image: busybox:1.27.2
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      - name: fixmount
+        command: [ 'sh', '-c', 'chown -R 1000:1000 /usr/share/elasticsearch/data' ]
+        image: busybox
+        volumeMounts:
+          - mountPath: /usr/share/elasticsearch/data
+            name: data
+      # Weighted anti-affinity to disallow deploying client node to the same worker node as master node
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  component: elasticsearch
+                  role: data
+        # Node Affinity to attract this Deployment's pods to a specific set of worker nodes
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: type # Replace this with corresponding worker node label's key
+                operator: In
+                values:
+                - general # Replace this with corresponding worker node label's value
+      serviceAccountName: elasticsearch
+      containers:
+      - name: elasticsearch
+        env:
+        - name: CLUSTER_NAME
+          value: logs
+        - name: NODE_MASTER
+          value: "false"
+        - name: NODE_INGEST
+          value: "false"
+        - name: NETWORK_HOST
+          value: "_eth0_"
+        - name: HTTP_ENABLE
+          value: "true"
+        - name: NUMBER_OF_MASTERS
+          value: "3"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: DISCOVERY_SERVICE
+          value: elasticsearch-discovery
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_DATA
+          value: "true"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: ES_JAVA_OPTS
+          value: -Xms8g -Xmx8g
+        # Official Image from Open Distro Team
+        image: amazon/opendistro-for-elasticsearch:0.8.0
+        imagePullPolicy: Always
+        # only publish the transport port
+        ports:
+        - containerPort: 9300
+          name: transport
+        resources:
+          requests:
+            cpu: 2
+            memory: 16Gi
+          limits:
+            cpu: 2
+            memory: 16Gi
+        livenessProbe:
+          tcpSocket:
+            port: transport
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: config
+          subPath: elasticsearch.yml
+        - mountPath: /usr/share/elasticsearch/config/logging.yml
+          name: config
+          subPath: logging.yml
+        - mountPath: /usr/share/elasticsearch/config/elk-crt.pem
+          name: config
+          subPath: elk-crt.pem
+        - mountPath: /usr/share/elasticsearch/config/elk-key.pem
+          name: config
+          subPath: elk-key.pem
+        - mountPath: /usr/share/elasticsearch/config/elk-root-ca.pem
+          name: config
+          subPath: elk-root-ca.pem
+        - mountPath: /usr/share/elasticsearch/config/admin-crt.pem
+          name: config
+          subPath: admin-crt.pem
+        - mountPath: /usr/share/elasticsearch/config/admin-key.pem
+          name: config
+          subPath: admin-key.pem
+        - mountPath: /usr/share/elasticsearch/config/admin-root-ca.pem
+          name: config
+          subPath: admin-root-ca.pem
+      volumes:
+      - name: config
+        configMap:
+          name: elasticsearch
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ ReadWriteOnce ]
+      storageClassName: elk-gp2
+      resources:
+        requests:
+          storage: 2Ti
