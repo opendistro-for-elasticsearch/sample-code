@@ -1,0 +1,15 @@
+{{- if .Values.rbac.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "opendistro-es.labels.standard" . | indent 4 }}
+rules:
+- apiGroups: ['extensions']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - {{ template "opendistro-es.fullname" . }}-psp
+{{- end }}

@@ -1,0 +1,98 @@
+{{- if .Values.kibana.enabled }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+{{ include "opendistro-es.labels.standard" . | indent 4 }}
+  name: {{ template "opendistro-es.fullname" . }}-kibana
+spec:
+  replicas: {{ .Values.kibana.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "opendistro-es.fullname" . }}-kibana
+    spec:
+      containers:
+      - env:
+        - name: CLUSTER_NAME
+          value: {{ .Values.clusterName }}
+        - name: ELASTIC_URL
+          value: https://{{ template "opendistro-es.fullname" . }}
+        {{- if .Values.kibana.elasticsearchAccount.secret }}
+        - name: ELASTICSEARCH_USERNAME
+          valueFrom:
+             secretKeyRef:
+               name: {{ .Values.kibana.elasticsearchAccount.secret }}
+               key: username
+        - name: ELASTICSEARCH_PASSWORD
+          valueFrom:
+             secretKeyRef:
+               name: {{ .Values.kibana.elasticsearchAccount.secret }}
+               key: password
+      {{- if and .Values.kibana.elasticsearchAccount.keyPassphrase.enabled }}
+        - name: KEY_PASSPHRASE
+          valueFrom:
+             secretKeyRef:
+               name: {{ .Values.kibana.elasticsearchAccount.secret }}
+               key: keypassphrase
+        # 32-character random string to be used as cookie password by security plugin
+      {{- end }}
+        - name: COOKIE_PASS
+          valueFrom:
+             secretKeyRef:
+               name: {{ .Values.kibana.elasticsearchAccount.secret }}
+               key: cookie
+      {{- end }}
+        image: {{ .Values.kibana.image }}:{{ .Values.kibana.imageTag }}
+        name: {{ template "opendistro-es.fullname" . }}-kibana
+        volumeMounts:
+          - mountPath: {{ .Values.kibana.configDirectory }}/kibana.yml
+            name: config
+            subPath: kibana.yml
+         {{- if and .Values.kibana.ssl.kibana.enabled .Values.kibana.ssl.kibana.existingCertSecret }}
+          - mountPath: {{ .Values.kibana.certsDirectory }}/kibana-crt.pem
+            name: kibana-certs
+            subPath: kibana-crt.pem
+          - mountPath: {{ .Values.kibana.certsDirectory }}/kibana-key.pem
+            name: kibana-certs
+            subPath: kibana-key.pem
+          - mountPath: {{ .Values.kibana.certsDirectory }}/kibana-root-ca.pem
+            name: kibana-certs
+            subPath: kibana-root-ca.pem
+         {{- end }}
+         {{- if and .Values.kibana.ssl.elasticsearch.enabled .Values.kibana.ssl.elasticsearch.existingCertSecret }}
+          - mountPath: {{ .Values.kibana.certsDirectory }}/elk-rest-crt.pem
+            name: elasticsearch-certs
+            subPath: elk-rest-crt.pem
+          - mountPath: {{ .Values.kibana.certsDirectory }}/elk-rest-key.pem
+            name: elasticsearch-certs
+            subPath: elk-rest-key.pem
+          - mountPath: {{ .Values.kibana.certsDirectory }}/elk-rest-root-ca.pem
+            name: elasticsearch-certs
+            subPath: elk-rest-root-ca.pem
+         {{- end }}
+        ports:
+        - containerPort: {{ .Values.kibana.port }}
+      serviceAccountName: {{ template "opendistro-es.kibana.serviceAccountName" . }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ template "opendistro-es.fullname" . }}-kibana-config
+        {{- if and .Values.kibana.ssl.kibana.enabled .Values.kibana.ssl.kibana.existingCertSecret }}
+        - name: kibana-certs
+          secret:
+            secretName: {{ .Values.kibana.ssl.kibana.existingCertSecret }}
+        {{- end }}
+        {{- if and .Values.kibana.ssl.elasticsearch.enabled .Values.kibana.ssl.elasticsearch.existingCertSecret }}
+        - name: elasticsearch-certs
+          secret:
+            secretName: {{ .Values.kibana.ssl.elasticsearch.existingCertSecret }}
+        {{- end }}
+      resources:
+{{ toYaml .Values.kibana.resources | indent 8 }}
+      nodeSelector:
+{{ toYaml .Values.kibana.nodeSelector | indent 8 }}
+      tolerations:
+{{ toYaml .Values.kibana.tolerations | indent 8 }}
+      restartPolicy: Always
+{{ end }}

@@ -1,0 +1,11 @@
+appVersion: 0.0.1
+description: 'Opendistro Elasticsearch'
+engine: gotpl
+kubeVersion: ^1.10.0-0
+maintainers:
+- email: derek.heldt-werle@viasat.com
+  name: OpenDistro ES Maintainers
+name: opendistro-es
+sources:
+- https://github.com/opendistro-for-elasticsearch/community
+version: 0.0.1

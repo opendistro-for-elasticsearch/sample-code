@@ -1,0 +1,176 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+{{ include "opendistro-es.labels.standard" . | indent 4 }}
+    role: data
+  name: {{ template "opendistro-es.fullname" . }}-data
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: {{ template "opendistro-es.fullname" . }}-data
+  replicas: {{ .Values.elasticsearch.data.replicas }}
+  template:
+    metadata:
+      labels:
+{{ include "opendistro-es.labels.standard" . | indent 8 }}
+        role: data
+    spec:
+      # Add toleration for not scheduling on dedicated node
+      tolerations:
+      - key: dedicated
+        value: "true"
+        effect: NoSchedule
+      initContainers:
+      - name: init-sysctl
+        image: busybox:1.27.2
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count={{ .Values.elasticsearch.maxMapCount }}
+        securityContext:
+          privileged: true
+      - name: fixmount
+        command: [ 'sh', '-c', 'chown -R 1000:1000 /usr/share/elasticsearch/data' ]
+        image: busybox
+        volumeMounts:
+          - mountPath: /usr/share/elasticsearch/data
+            name: data
+      # Weighted anti-affinity to disallow deploying client node to the same worker node as master node
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  role: data
+      {{- with .Values.elasticsearch.data.nodeAffinity }}
+        nodeAffinity:
+{{ toYaml . | indent 10 }}
+      {{- end }}
+      serviceAccountName: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
+      containers:
+      - name: elasticsearch
+        env:
+        - name: CLUSTER_NAME
+          value: {{ .Values.clusterName }}
+        - name: NODE_MASTER
+          value: "false"
+        - name: NODE_INGEST
+          value: "false"
+        - name: NETWORK_HOST
+          value: "_eth0_"
+        - name: HTTP_ENABLE
+          value: "true"
+        - name: NUMBER_OF_MASTERS
+          value: {{ .Values.elasticsearch.master.replicas | quote }}
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: DISCOVERY_SERVICE
+          value: {{ template "opendistro-es.fullname" . }}-discovery
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_DATA
+          value: "true"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: ES_JAVA_OPTS
+          value: {{ .Values.elasticsearch.data.javaOpts }}
+        # Official Image from Open Distro Team
+        image: {{ .Values.elasticsearch.image }}:{{ .Values.elasticsearch.imageTag }}
+        imagePullPolicy: Always
+        # only publish the transport port
+        ports:
+        - containerPort: 9300
+          name: transport
+        resources:
+{{ toYaml .Values.elasticsearch.data.resources | indent 8 }}
+        livenessProbe:
+          tcpSocket:
+            port: transport
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elasticsearch.yml
+          name: config
+          subPath: elasticsearch.yml
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/logging.yml
+          name: config
+          subPath: logging.yml
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/log4j2.properties
+          name: config
+          subPath: log4j2.properties
+         {{- if and .Values.elasticsearch.ssl.transport.enabled .Values.elasticsearch.ssl.transport.existingCertSecret }}
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-transport-crt.pem
+          name: transport-certs
+          subPath: elk-transport-crt.pem
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-transport-key.pem
+          name: transport-certs
+          subPath: elk-transport-key.pem
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-transport-root-ca.pem
+          name: transport-certs
+          subPath: elk-transport-root-ca.pem
+         {{- end }}
+         {{- if and .Values.elasticsearch.ssl.rest.enabled .Values.elasticsearch.ssl.rest.existingCertSecret }}
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-rest-crt.pem
+          name: rest-certs
+          subPath: elk-rest-crt.pem
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-rest-key.pem
+          name: rest-certs
+          subPath: elk-rest-key.pem
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-rest-root-ca.pem
+          name: rest-certs
+          subPath: elk-rest-root-ca.pem
+         {{- end }}
+         {{- if and .Values.elasticsearch.ssl.admin.enabled .Values.elasticsearch.ssl.admin.existingCertSecret }}
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/admin-crt.pem
+          name: admin-certs
+          subPath: admin-crt.pem
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/admin-key.pem
+          name: admin-certs
+          subPath: admin-key.pem
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/admin-root-ca.pem
+          name: admin-certs
+          subPath: admin-root-ca.pem
+         {{- end }}
+      volumes:
+      - name: config
+        secret:
+          secretName: elasticsearch-config
+      {{- if and .Values.elasticsearch.ssl.transport.enabled .Values.elasticsearch.ssl.transport.existingCertSecret }}
+      - name: transport-certs
+        secret:
+          secretName: {{ .Values.elasticsearch.ssl.transport.existingCertSecret }}
+      {{- end }}
+      {{- if and .Values.elasticsearch.ssl.rest.enabled .Values.elasticsearch.ssl.rest.existingCertSecret }}
+      - name: rest-certs
+        secret:
+          secretName: {{ .Values.elasticsearch.ssl.rest.existingCertSecret }}
+      {{- end }}
+      {{- if and .Values.elasticsearch.ssl.admin.enabled .Values.elasticsearch.ssl.admin.existingCertSecret }}
+      - name: admin-certs
+        secret:
+          secretName: {{ .Values.elasticsearch.ssl.admin.existingCertSecret }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ ReadWriteOnce ]
+      storageClassName: {{ .Values.elasticsearch.data.storageClassName }}
+      resources:
+        requests:
+          storage: {{ .Values.elasticsearch.data.storage }}

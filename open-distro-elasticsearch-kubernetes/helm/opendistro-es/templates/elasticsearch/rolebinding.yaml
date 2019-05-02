@@ -1,0 +1,16 @@
+{{- if .Values.rbac.enabled -}}
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+{{ include "opendistro-es.labels.standard" . | indent 4 }}
+  name: {{ template "opendistro-es.fullname" . }}-elastic-rolebinding
+roleRef:
+  kind: Role
+  name: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
