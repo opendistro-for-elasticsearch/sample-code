@@ -1,32 +1,26 @@
-# IoT Device and Sensor Simulator
+# Performance analyzer output to Elasticsearch
 
-This library provides a set of Python classes that simulates sensors and
-devices. Devices are collections of sensors. The library also includes classes
-for buffering log lines and sending to Elasticsearch. 
+This library provides a main.py script that collects all of the metrics
+surfaced by Performance Analyzer, across their dimensions and aggregations. It 
+pushes those metrics to Elasticsearch for visualization with Kibana.
 
+This initial version works with localhost only, presumably targeted at Open
+Distro for Elasticsearch, running locally in containers.
 
 ## Requirements
 
 The code requires Python 3
-
+Libraries:
+HTTP Requests
+pytz
 
 ## Basic Usage
 
-main.py illustrates the basic usage of the library. Construct and use a
-FlushingESBuffer, pointing at the Elasticsearch endpoint. Construct devices with
-Sensors. Call each Device's report() method in a loop, and send the result
-to the FlushingESBuffer.
+python3 main.py
 
-There are 4 Sensor types:
-
-1. SineSensor - Produces a sin wave, based on the system clock between a bottom
-and a top value. You can add random fuzz. 
-2. ConstSensor - Produces a constant value. Can be modified with Random fuzz. 
-3. DriftingConstSensor - A ConstSensor that drifts randomly from its starting 
-value. 
-4. MonotonicSensor - Produces a monotonically changing value, based on a start 
-point, delta amount, and fuzz.
-
+NOTE: before running, apply the template in template.json to your cluster. If
+you don't set the template, Elasticsearch will interpret the timestamp as a
+long integer.
 
 ## Code of Conduct
 
