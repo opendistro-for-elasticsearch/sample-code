@@ -1,0 +1,49 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana
+  namespace: kibana
+  labels:
+    app: kibana
+data:
+  kibana.yml: |-
+    ---
+    # Default Kibana configuration from kibana-docker.
+    server.name: kibana
+    server.host: "0"
+
+    # Replace with Elasticsearch DNS name picked during Service deployment
+    elasticsearch.url: https://elk.sec.example.com:9200
+    elasticsearch.requestTimeout: 360000
+
+    # Kibana TLS Config
+    server.ssl.enabled: true
+    server.ssl.key: /usr/share/kibana/config/kibana-key.pem
+    server.ssl.certificate: /usr/share/kibana/config/kibana-crt.pem
+    server.ssl.keyPassphrase: ${KEY_PASSPHRASE}
+    elasticsearch.ssl.certificateAuthorities: /usr/share/kibana/config/kibana-root-ca.pem
+
+    opendistro_security.cookie.secure: true
+    opendistro_security.cookie.password: ${COOKIE_PASS}
+
+  kibana-crt.pem: |-
+    -----BEGIN CERTIFICATE-----
+    <CERTIFICATE_DATA_REDACTED>
+    -----END CERTIFICATE-----
+    -----BEGIN CERTIFICATE-----
+    <CERTIFICATE_DATA_REDACTED>
+    -----END CERTIFICATE-----
+
+  kibana-key.pem: |-
+    -----BEGIN ENCRYPTED PRIVATE KEY-----
+    <CERTIFICATE_DATA_REDACTED>
+    -----END ENCRYPTED PRIVATE KEY-----
+
+  kibana-root-ca.pem: |-
+    -----BEGIN CERTIFICATE-----
+    <CERTIFICATE_DATA_REDACTED>
+    -----END CERTIFICATE-----
