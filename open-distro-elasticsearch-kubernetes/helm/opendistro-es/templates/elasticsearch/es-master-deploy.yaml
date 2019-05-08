@@ -103,16 +103,20 @@ spec:
         - containerPort: 9600
           name: metrics
         volumeMounts:
+        {{- if .Values.elasticsearch.config }}
         - mountPath: {{ .Values.elasticsearch.configDirectory }}/elasticsearch.yml
           name: config
           subPath: elasticsearch.yml
-        - mountPath: {{ .Values.elasticsearch.configDirectory }}/logging.yml
-          name: config
-          subPath: logging.yml
+        {{- end }}
+        {{- if .Values.elasticsearch.log4jConfig }}
         - mountPath: {{ .Values.elasticsearch.configDirectory }}/log4j2.properties
           name: config
           subPath: log4j2.properties
-         {{- if and .Values.elasticsearch.ssl.transport.enabled .Values.elasticsearch.ssl.transport.existingCertSecret }}
+        {{- end }}
+        - mountPath: {{ .Values.elasticsearch.configDirectory }}/logging.yml
+          name: config
+          subPath: logging.yml
+        {{- if and .Values.elasticsearch.ssl.transport.enabled .Values.elasticsearch.ssl.transport.existingCertSecret }}
         - mountPath: {{ .Values.elasticsearch.configDirectory }}/elk-transport-crt.pem
           name: transport-certs
           subPath: elk-transport-crt.pem

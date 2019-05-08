@@ -16,8 +16,11 @@ spec:
       - env:
         - name: CLUSTER_NAME
           value: {{ .Values.clusterName }}
-        - name: ELASTIC_URL
-          value: https://{{ template "opendistro-es.fullname" . }}
+        # If no custom configuration provided, default to internal DNS
+        {{- if not .Values.kibana.config }}
+        - name: ELASTICSEARCH_URL
+          value: https://{{ template "opendistro-es.fullname" . }}-client-service
+        {{- end }}
         {{- if .Values.kibana.elasticsearchAccount.secret }}
         - name: ELASTICSEARCH_USERNAME
           valueFrom:
@@ -46,9 +49,11 @@ spec:
         image: {{ .Values.kibana.image }}:{{ .Values.kibana.imageTag }}
         name: {{ template "opendistro-es.fullname" . }}-kibana
         volumeMounts:
+         {{- if .Values.kibana.config }}
           - mountPath: {{ .Values.kibana.configDirectory }}/kibana.yml
             name: config
             subPath: kibana.yml
+         {{- end }}
          {{- if and .Values.kibana.ssl.kibana.enabled .Values.kibana.ssl.kibana.existingCertSecret }}
           - mountPath: {{ .Values.kibana.certsDirectory }}/kibana-crt.pem
             name: kibana-certs
@@ -75,9 +80,11 @@ spec:
         - containerPort: {{ .Values.kibana.port }}
       serviceAccountName: {{ template "opendistro-es.kibana.serviceAccountName" . }}
       volumes:
+        {{- if .Values.kibana.config }}
         - name: config
           secret:
             secretName: {{ template "opendistro-es.fullname" . }}-kibana-config
+        {{- end }}
         {{- if and .Values.kibana.ssl.kibana.enabled .Values.kibana.ssl.kibana.existingCertSecret }}
         - name: kibana-certs
           secret:
