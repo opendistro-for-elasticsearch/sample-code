@@ -68,7 +68,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: DISCOVERY_SERVICE
+        - name: discovery.zen.ping.unicast.hosts
           value: {{ template "opendistro-es.fullname" . }}-discovery
         - name: KUBERNETES_NAMESPACE
           valueFrom:
@@ -81,7 +81,7 @@ spec:
         - name: ES_JAVA_OPTS
           value: {{ .Values.elasticsearch.client.javaOpts }}
         resources:
-{{ toYaml .Values.elasticsearch.client.resources | indent 8 }}
+{{ toYaml .Values.elasticsearch.client.resources | indent 12 }}
         # Official Image from Open Distro Team
         image: {{ .Values.elasticsearch.image }}:{{ .Values.elasticsearch.imageTag }}
         imagePullPolicy: Always

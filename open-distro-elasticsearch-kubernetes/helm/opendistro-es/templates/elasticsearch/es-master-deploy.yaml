@@ -73,7 +73,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: DISCOVERY_SERVICE
+        - name: discovery.zen.ping.unicast.hosts
           value: {{ template "opendistro-es.fullname" . }}-discovery
         - name: KUBERNETES_NAMESPACE
           valueFrom:
@@ -86,7 +86,7 @@ spec:
         - name: ES_JAVA_OPTS
           value: {{ .Values.elasticsearch.master.javaOpts }}
         resources:
-{{ toYaml .Values.elasticsearch.master.resources | indent 8 }}
+{{ toYaml .Values.elasticsearch.master.resources | indent 12 }}
         livenessProbe:
           tcpSocket:
             port: transport
