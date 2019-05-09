@@ -118,11 +118,11 @@ elasticsearch:
     nodeAffinity: {}
     resources:
       limits:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 1
+        memory: 1024mi
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 200m
+        memory: 1024Mi
     javaOpts: "-Xms512m -Xmx512m"
 
   data:
@@ -133,11 +133,11 @@ elasticsearch:
     storage: 100Gi
     resources:
       limits:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 1
+        memory: 1024mi
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 200m
+        memory: 1024Mi
 
   client:
     service:
@@ -175,11 +175,11 @@ elasticsearch:
       #      - chart-example.local
     resources:
       limits:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 1
+        memory: 1024mi
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 200m
+        memory: 1024Mi
 
   config: {}
     ## Example Config
