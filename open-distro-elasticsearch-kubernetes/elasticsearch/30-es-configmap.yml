@@ -10,42 +10,6 @@ metadata:
   labels:
     app: elasticsearch
 data:
-  elk-crt.pem: |-
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-
-  elk-key.pem: |-
-    -----BEGIN ENCRYPTED PRIVATE KEY-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END ENCRYPTED PRIVATE KEY-----
-
-  elk-root-ca.pem: |-
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-
-  admin-crt.pem: |-
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-
-  admin-key.pem: |-
-    -----BEGIN ENCRYPTED PRIVATE KEY-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END ENCRYPTED PRIVATE KEY-----
-
-  admin-root-ca.pem: |-
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-
   elasticsearch.yml: |-
     cluster:
       name: ${CLUSTER_NAME}
@@ -61,14 +25,11 @@ data:
 
     network.host: ${NETWORK_HOST}
 
-    thread_pool.bulk.queue_size: 800
-
     path:
       data: /usr/share/elasticsearch/data
       logs: /usr/share/elasticsearch/logs
 
     http:
-      enabled: ${HTTP_ENABLE}
       compression: true
 
     discovery:
@@ -80,7 +41,7 @@ data:
     opendistro_security.ssl.transport.pemcert_filepath: elk-crt.pem
     opendistro_security.ssl.transport.pemkey_filepath: elk-key.pem
     opendistro_security.ssl.transport.pemtrustedcas_filepath: elk-root-ca.pem
-    opendistro_security.ssl.transport.pemkey_password: <KEY_PASSPHRASE_REDACTED>
+    opendistro_security.ssl.transport.pemkey_password: ${TRANSPORT_TLS_PEM_PASS}
     opendistro_security.ssl.transport.enforce_hostname_verification: false
 
     # TLS Configuration REST Layer
@@ -88,12 +49,12 @@ data:
     opendistro_security.ssl.http.pemcert_filepath: elk-crt.pem
     opendistro_security.ssl.http.pemkey_filepath: elk-key.pem
     opendistro_security.ssl.http.pemtrustedcas_filepath: elk-root-ca.pem
-    opendistro_security.ssl.http.pemkey_password: <KEY_PASSPHRASE_REDACTED>
+    opendistro_security.ssl.http.pemkey_password: ${HTTP_TLS_PEM_PASS}
 
     # Demo Certificate Option Disabled
     opendistro_security.allow_unsafe_democertificates: false
 
-    opendistro_security.allow_default_init_securityindex: true
+    opendistro_security.allow_default_init_securityindex: false
 
     opendistro_security.authcz.admin_dn:
       - CN=admin.example.com

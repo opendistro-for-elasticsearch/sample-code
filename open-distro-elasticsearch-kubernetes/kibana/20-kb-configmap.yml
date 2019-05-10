@@ -17,7 +17,7 @@ data:
     server.host: "0"
 
     # Replace with Elasticsearch DNS name picked during Service deployment
-    elasticsearch.url: https://elk.sec.example.com:9200
+    elasticsearch.url: ${ELASTICSEARCH_URL}
     elasticsearch.requestTimeout: 360000
 
     # Kibana TLS Config
@@ -29,21 +29,3 @@ data:
 
     opendistro_security.cookie.secure: true
     opendistro_security.cookie.password: ${COOKIE_PASS}
-
-  kibana-crt.pem: |-
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----
-
-  kibana-key.pem: |-
-    -----BEGIN ENCRYPTED PRIVATE KEY-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END ENCRYPTED PRIVATE KEY-----
-
-  kibana-root-ca.pem: |-
-    -----BEGIN CERTIFICATE-----
-    <CERTIFICATE_DATA_REDACTED>
-    -----END CERTIFICATE-----

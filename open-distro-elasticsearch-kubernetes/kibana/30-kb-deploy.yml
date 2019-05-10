@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kibana
@@ -22,12 +22,15 @@ spec:
       containers:
       - name: kibana
         # Official Image from Open Distro Team
-        image: amazon/opendistro-for-elasticsearch-kibana:0.8.0
+        image: amazon/opendistro-for-elasticsearch-kibana:0.9.0
         env:
         - name: CLUSTER_NAME
           value: logs
         - name: ELASTICSEARCH_USERNAME
           value: kibanaserver
+        # Replace with URL of Elasticsearch API
+        - name: ELASTICSEARCH_URL
+          value: <URL_OF_ELASTICSEARCH_API>
         # Replace with password chosen during cluster initialization
         - name: ELASTICSEARCH_PASSWORD
           value: <PASSWORD_CHOSEN_DURING_CLUSTER_INITIALIZATION>
@@ -61,16 +64,19 @@ spec:
         - mountPath: /usr/share/kibana/config/kibana.yml
           name: config
           subPath: kibana.yml
-        - mountPath: /usr/share/kibana/config/elk-crt.pem
-          name: config
-          subPath: elk-crt.pem
-        - mountPath: /usr/share/kibana/config/elk-key.pem
-          name: config
-          subPath: elk-key.pem
-        - mountPath: /usr/share/kibana/config/elk-root-ca.pem
-          name: config
-          subPath: elk-root-ca.pem
+        - mountPath: /usr/share/kibana/config/kibana-crt.pem
+          name: certs
+          subPath: kibana-crt.pem
+        - mountPath: /usr/share/kibana/config/kibana-key.pem
+          name: certs
+          subPath: kibana-key.pem
+        - mountPath: /usr/share/kibana/config/kibana-root-ca.pem
+          name: certs
+          subPath: kibana-root-ca.pem
       volumes:
       - name: config
         configMap:
           name: kibana
+      - name: certs
+        secret:
+          secretName: kibana-tls-data
