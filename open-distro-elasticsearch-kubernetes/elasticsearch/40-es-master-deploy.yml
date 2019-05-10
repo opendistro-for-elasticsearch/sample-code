@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -11,7 +11,11 @@ metadata:
   name: es-master
   namespace: elasticsearch
 spec:
-  replicas: 3
+  replicas: 3 # Number of Elasticsearch master nodes to deploy
+  selector:
+    matchLabels:
+      component: elasticsearch
+      role: master
   template:
     metadata:
       labels:
@@ -67,8 +71,10 @@ spec:
           value: "false"
         - name: NETWORK_HOST
           value: "0.0.0.0"
-        - name: HTTP_ENABLE
-          value: "true"
+        - name: TRANSPORT_TLS_PEM_PASS
+          value: "REPLACE_WITH_TLS_PRIVATE_KEY_PASSPHRASE" # Replace this with the passphrase for the TLS private key
+        - name: HTTP_TLS_PEM_PASS
+          value: "REPLACE_WITH_TLS_PRIVATE_KEY_PASSPHRASE" # Replace this with the passphrase for the TLS private key
         - name: NODE_NAME
           valueFrom:
             fieldRef:
@@ -98,7 +104,7 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 10
         # Official Image from Open Distro Team
-        image: amazon/opendistro-for-elasticsearch:0.8.0
+        image: amazon/opendistro-for-elasticsearch:0.9.0
         imagePullPolicy: Always
         ports:
         - containerPort: 9300
@@ -115,24 +121,33 @@ spec:
           name: config
           subPath: logging.yml
         - mountPath: /usr/share/elasticsearch/config/elk-crt.pem
-          name: config
+          name: certs
           subPath: elk-crt.pem
+          readOnly: true
         - mountPath: /usr/share/elasticsearch/config/elk-key.pem
-          name: config
+          name: certs
           subPath: elk-key.pem
+          readOnly: true
         - mountPath: /usr/share/elasticsearch/config/elk-root-ca.pem
-          name: config
+          name: certs
           subPath: elk-root-ca.pem
+          readOnly: true
         - mountPath: /usr/share/elasticsearch/config/admin-crt.pem
-          name: config
+          name: certs
           subPath: admin-crt.pem
+          readOnly: true
         - mountPath: /usr/share/elasticsearch/config/admin-key.pem
-          name: config
+          name: certs
           subPath: admin-key.pem
+          readOnly: true
         - mountPath: /usr/share/elasticsearch/config/admin-root-ca.pem
-          name: config
+          name: certs
           subPath: admin-root-ca.pem
+          readOnly: true
       volumes:
       - name: config
         configMap:
           name: elasticsearch
+      - name: certs
+        secret:
+          secretName: elasticsearch-tls-data
