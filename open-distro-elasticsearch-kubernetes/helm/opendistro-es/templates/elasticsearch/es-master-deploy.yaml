@@ -179,7 +179,7 @@ spec:
       volumes:
       - name: config
         secret:
-          secretName: elasticsearch-config
+          secretName: {{ template "opendistro-es.fullname" . }}-es-config
       {{- if and .Values.elasticsearch.ssl.transport.enabled .Values.elasticsearch.ssl.transport.existingCertSecret }}
       - name: transport-certs
         secret:
