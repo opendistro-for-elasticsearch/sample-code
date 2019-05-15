@@ -1,24 +1,11 @@
 '''
-Copyright 2019, Amazon Web Services Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
 
 This walks all of the combinations of metrics, dimensions, and aggregations.
 METRICS - contains descriptions of the metric to be pulled and the dimensions
 for that metric. See also the docs here:
-https://opendistro.github.io/for-elasticsearch-docs/docs/pa/reference/. The
-descriptions initially have None for the aggregations. These are added in the
-loop below to send all the possible values 'min', 'max', 'avg', 'sum'.
+https://opendistro.github.io/for-elasticsearch-docs/docs/pa/reference/.
 '''
 
 import argparse
@@ -134,7 +121,7 @@ if __name__ == '__main__':
         On my Mac, this loop takes ~8 seconds. Ideally it would be < 5 seconds.
         Performance Analyzer aggregates across 5 second intervals, so this will
         miss some data points. The obvious fix for that is to get metrics in
-        bulk, rather than one at a time.'''
+        bulk, rather than one at a time.''' 
     while 1:
         print('Gathering docs')
         docs = MetricGatherer().get_all_metrics()
