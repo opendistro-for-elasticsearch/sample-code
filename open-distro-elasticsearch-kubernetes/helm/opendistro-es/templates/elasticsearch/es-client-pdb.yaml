@@ -1,0 +1,23 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+{{- if .Values.elasticsearch.client.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ template "opendistro-es.fullname" . }}-client-pdb
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "opendistro-es.labels.standard" . | indent 4 }}
+spec:
+{{- if .Values.elasticsearch.client.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.client.podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- if .Values.elasticsearch.client.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.elasticsearch.client.podDisruptionBudget.maxUnavailable }}
+{{- end }}
+  selector:
+    matchLabels:
+      app: {{ template "opendistro-es.fullname" . }}
+      role: client
+{{- end }}

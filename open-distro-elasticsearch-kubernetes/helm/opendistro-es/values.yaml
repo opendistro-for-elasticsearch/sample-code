@@ -7,11 +7,11 @@ kibana:
   externalPort: 443
   resources:
     limits:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 500m
+      memory: 512Mi
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 500m
+      memory: 512Mi
 
   elasticsearchAccount:
     secret: ""
@@ -124,10 +124,12 @@ elasticsearch:
         cpu: 200m
         memory: 1024Mi
     javaOpts: "-Xms512m -Xmx512m"
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
 
   data:
     replicas: 3
-    javaOpts: "-Xms512m -Xmx512m"
     nodeAffinity: {}
     storageClassName: gp2-encrypted
     storage: 100Gi
@@ -138,6 +140,10 @@ elasticsearch:
       requests:
         cpu: 200m
         memory: 1024Mi
+    javaOpts: "-Xms512m -Xmx512m"
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
 
   client:
     service:
@@ -180,6 +186,9 @@ elasticsearch:
       requests:
         cpu: 200m
         memory: 1024Mi
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
 
   config: {}
     ## Example Config

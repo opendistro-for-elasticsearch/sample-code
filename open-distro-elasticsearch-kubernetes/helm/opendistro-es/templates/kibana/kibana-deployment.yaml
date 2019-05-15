@@ -11,6 +11,11 @@ spec:
     metadata:
       labels:
         app: {{ template "opendistro-es.fullname" . }}-kibana
+      annotations:
+        {{/* This forces a restart if the secret config has changed */}}
+        {{- if .Values.kibana.config }}
+        checksum/config: {{ include (print .Template.BasePath "/kibana/kibana-config-secret.yaml") . | sha256sum | trunc 63 }}
+        {{- end }}
     spec:
       containers:
       - env:
@@ -47,6 +52,8 @@ spec:
                key: cookie
       {{- end }}
         image: {{ .Values.kibana.image }}:{{ .Values.kibana.imageTag }}
+        resources:
+{{ toYaml .Values.kibana.resources | indent 12 }}
         name: {{ template "opendistro-es.fullname" . }}-kibana
         volumeMounts:
          {{- if .Values.kibana.config }}
@@ -95,11 +102,13 @@ spec:
           secret:
             secretName: {{ .Values.kibana.ssl.elasticsearch.existingCertSecret }}
         {{- end }}
-      resources:
-{{ toYaml .Values.kibana.resources | indent 8 }}
+    {{- with .Values.kibana.nodeSelector }}
       nodeSelector:
-{{ toYaml .Values.kibana.nodeSelector | indent 8 }}
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.kibana.tolerations }}
       tolerations:
-{{ toYaml .Values.kibana.tolerations | indent 8 }}
+{{ toYaml . | indent 8 }}
+    {{- end }}
       restartPolicy: Always
 {{ end }}

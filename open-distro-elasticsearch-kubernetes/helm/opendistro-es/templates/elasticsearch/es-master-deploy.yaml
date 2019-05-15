@@ -16,6 +16,11 @@ spec:
     metadata:
       labels:
         role: master
+      annotations:
+        {{/* This forces a restart if the secret config has changed */}}
+        {{- if .Values.elasticsearch.config }}
+        configchecksum: {{ include (print .Template.BasePath "/elasticsearch/es-config-secret.yaml") . | sha256sum | trunc 63 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
       # Add toleration for not scheduling on dedicated node

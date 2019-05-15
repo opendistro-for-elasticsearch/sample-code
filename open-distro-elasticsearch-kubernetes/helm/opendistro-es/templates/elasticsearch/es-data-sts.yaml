@@ -18,6 +18,11 @@ spec:
       labels:
 {{ include "opendistro-es.labels.standard" . | indent 8 }}
         role: data
+      annotations:
+        {{/* This forces a restart if the secret config has changed */}}
+        {{- if .Values.elasticsearch.config }}
+        configchecksum: {{ include (print .Template.BasePath "/elasticsearch/es-config-secret.yaml") . | sha256sum | trunc 63 }}
+        {{- end }}
     spec:
       # Add toleration for not scheduling on dedicated node
       tolerations:
