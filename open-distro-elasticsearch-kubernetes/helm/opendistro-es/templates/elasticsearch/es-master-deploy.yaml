@@ -15,6 +15,7 @@ spec:
   template:
     metadata:
       labels:
+{{ include "opendistro-es.labels.standard" . | indent 8 }}
         role: master
       annotations:
         {{/* This forces a restart if the secret config has changed */}}
@@ -90,6 +91,9 @@ spec:
               resource: limits.cpu
         - name: ES_JAVA_OPTS
           value: {{ .Values.elasticsearch.master.javaOpts }}
+{{- if .Values.elasticsearch.extraEnvs }}
+{{ toYaml .Values.elasticsearch.extraEnvs | indent 8 }}
+{{- end }}
         resources:
 {{ toYaml .Values.elasticsearch.master.resources | indent 12 }}
         livenessProbe:

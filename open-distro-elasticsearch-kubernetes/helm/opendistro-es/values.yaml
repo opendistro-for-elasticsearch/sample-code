@@ -18,6 +18,8 @@ kibana:
     keyPassphrase:
       enabled: false
 
+  extraEnvs: []
+
   ssl:
     kibana:
       enabled: false
@@ -101,6 +103,8 @@ elasticsearch:
     internalUsersSecret:
     rolesSecret:
     rolesMappingSecret:
+
+  extraEnvs: []
 
   ssl:
     transport:

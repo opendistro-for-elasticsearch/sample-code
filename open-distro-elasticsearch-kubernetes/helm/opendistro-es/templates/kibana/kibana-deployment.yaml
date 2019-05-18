@@ -10,6 +10,7 @@ spec:
   template:
     metadata:
       labels:
+{{ include "opendistro-es.labels.standard" . | indent 8 }}
         app: {{ template "opendistro-es.fullname" . }}-kibana
       annotations:
         {{/* This forces a restart if the secret config has changed */}}
@@ -51,6 +52,9 @@ spec:
                name: {{ .Values.kibana.elasticsearchAccount.secret }}
                key: cookie
       {{- end }}
+{{- if .Values.kibana.extraEnvs }}
+{{ toYaml .Values.kibana.extraEnvs | indent 8 }}
+{{- end }}
         image: {{ .Values.kibana.image }}:{{ .Values.kibana.imageTag }}
         resources:
 {{ toYaml .Values.kibana.resources | indent 12 }}

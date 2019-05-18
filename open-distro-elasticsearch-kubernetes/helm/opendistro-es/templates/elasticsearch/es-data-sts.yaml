@@ -92,6 +92,9 @@ spec:
               resource: limits.cpu
         - name: ES_JAVA_OPTS
           value: {{ .Values.elasticsearch.data.javaOpts }}
+{{- if .Values.elasticsearch.extraEnvs }}
+{{ toYaml .Values.elasticsearch.extraEnvs | indent 8 }}
+{{- end }}
         # Official Image from Open Distro Team
         image: {{ .Values.elasticsearch.image }}:{{ .Values.elasticsearch.imageTag }}
         imagePullPolicy: Always
