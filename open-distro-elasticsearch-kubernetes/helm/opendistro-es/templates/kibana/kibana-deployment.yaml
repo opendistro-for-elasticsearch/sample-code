@@ -18,10 +18,11 @@ spec:
         checksum/config: {{ include (print .Template.BasePath "/kibana/kibana-config-secret.yaml") . | sha256sum | trunc 63 }}
         {{- end }}
     spec:
+{{- include "opendistro-es.imagePullSecrets" . | indent 6 }}
       containers:
       - env:
         - name: CLUSTER_NAME
-          value: {{ .Values.clusterName }}
+          value: {{ .Values.global.clusterName }}
         # If no custom configuration provided, default to internal DNS
         {{- if not .Values.kibana.config }}
         - name: ELASTICSEARCH_URL

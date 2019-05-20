@@ -85,13 +85,20 @@ kibana:
     # If not set and create is true, a name is generated using the fullname template
     name:
 
-clusterName: elasticsearch
 
-psp:
-  create: true
+global:
+  clusterName: elasticsearch
 
-rbac:
-  enabled: true
+  psp:
+    create: true
+
+  rbac:
+    enabled: true
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  # imagePullSecrets:
+  #   - myRegistryKeySecretName
+
 
 elasticsearch:
 
@@ -105,6 +112,10 @@ elasticsearch:
     rolesMappingSecret:
 
   extraEnvs: []
+
+  initContainer:
+    image: busybox
+    imageTag: 1.27.2
 
   ssl:
     transport:

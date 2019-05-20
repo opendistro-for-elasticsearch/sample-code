@@ -23,6 +23,7 @@ spec:
         configchecksum: {{ include (print .Template.BasePath "/elasticsearch/es-config-secret.yaml") . | sha256sum | trunc 63 }}
         {{- end }}
     spec:
+{{- include "opendistro-es.imagePullSecrets" . | indent 6 }}
       serviceAccountName: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
       # Add toleration for not scheduling on dedicated node
       tolerations:
@@ -43,7 +44,7 @@ spec:
       {{- end }}
       initContainers:
       - name: init-sysctl
-        image: busybox:1.27.2
+        image: {{ .Values.elasticsearch.initContainer.image }}:{{ .Values.elasticsearch.initContainer.imageTag }}
         command:
         - sysctl
         - -w
@@ -54,7 +55,7 @@ spec:
       - name: elasticsearch
         env:
         - name: CLUSTER_NAME
-          value: {{ .Values.clusterName }}
+          value: {{ .Values.global.clusterName }}
         - name: NUMBER_OF_MASTERS
           value: {{ .Values.elasticsearch.master.replicas | quote }}
         - name: NODE_MASTER
