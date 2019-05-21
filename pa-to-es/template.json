@@ -1,0 +1,18 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+
+{
+    "index_patterns": ["pa-*"],
+    "settings": {
+        "number_of_shards": 1
+    },
+    "mappings": {
+        "log": {
+            "properties": {
+                "@timestamp": {
+                    "type": "date"
+                }
+            }
+        }
+    }
+}
