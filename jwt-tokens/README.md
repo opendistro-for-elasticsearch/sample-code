@@ -1,7 +1,7 @@
 # JWT Tokens, sample code and config
 
-This folder contains the sample code for the blog post titled Use JWTs to 
-authenticate Open Distro for Elasticsearch and Kibana.
+This folder contains the sample code for the blog post titled Use Java web Tokens
+to authenticate in Open Distro for Elasticsearch and Kibana.
 
 The top level files include the config files and docker-compose file to 
 bring up an Elasticsearch cluster with a single node and a container with Kibana.
