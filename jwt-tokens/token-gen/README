@@ -1,5 +1,3 @@
 To run:
----------
-1. clone the repository
-2. mvn clean install
-3. java -jar target/jwt-test-tokens-1.0-SNAPSHOT-jar-with-dependencies.jar
+1. mvn clean install
+2. java -jar target/jwt-test-tokens-1.0-SNAPSHOT-jar-with-dependencies.jar

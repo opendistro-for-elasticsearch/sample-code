@@ -1,3 +1,7 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+
 # This is the main Open Distro Security configuration file where authentication
 # and authorization is defined.
 # 
