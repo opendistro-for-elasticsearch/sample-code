@@ -13,7 +13,6 @@ services:
         hard: -1
     volumes:
       - odfe-data1:/usr/share/elasticsearch/data
-      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
       - ./config.yml:/usr/share/elasticsearch/plugins/opendistro_security/securityconfig/config.yml
     ports:
       - 9200:9200
