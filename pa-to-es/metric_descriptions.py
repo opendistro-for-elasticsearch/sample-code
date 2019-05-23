@@ -1,5 +1,7 @@
 '''
-Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+Copyright 2019, Amazon Web Services Inc.
+
 SPDX-License-Identifier: MIT-0
 
 Defines a MetricDescription collection. Provides a single function that returns
