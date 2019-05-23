@@ -1,0 +1,3 @@
+To run:
+1. mvn clean install
+2. java -jar target/jwt-test-tokens-1.0-SNAPSHOT-jar-with-dependencies.jar
