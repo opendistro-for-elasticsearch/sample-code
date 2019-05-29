@@ -25,11 +25,14 @@ spec:
         {{- end }}
     spec:
 {{- include "opendistro-es.imagePullSecrets" . | indent 6 }}
-      # Add toleration for not scheduling on dedicated node
+    {{- with .Values.elasticsearch.data.tolerations }}
       tolerations:
-      - key: dedicated
-        value: "true"
-        effect: NoSchedule
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.elasticsearch.data.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
       initContainers:
       - name: init-sysctl
         image: {{ .Values.elasticsearch.initContainer.image }}:{{ .Values.elasticsearch.initContainer.imageTag }}
@@ -105,11 +108,14 @@ spec:
           name: transport
         resources:
 {{ toYaml .Values.elasticsearch.data.resources | indent 12 }}
+    {{- with .Values.elasticsearch.data.readinessProbe}}
+        readinessProbe:
+{{ toYaml . | indent 10 }}
+    {{- end }}
+    {{- with .Values.elasticsearch.data.livenessProbe}}
         livenessProbe:
-          tcpSocket:
-            port: transport
-          initialDelaySeconds: 60
-          periodSeconds: 10
+{{ toYaml . | indent 10 }}
+    {{- end }}
         volumeMounts:
         - mountPath: /usr/share/elasticsearch/data
           name: data

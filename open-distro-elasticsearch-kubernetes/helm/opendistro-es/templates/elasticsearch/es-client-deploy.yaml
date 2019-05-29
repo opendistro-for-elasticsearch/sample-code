@@ -25,11 +25,14 @@ spec:
     spec:
 {{- include "opendistro-es.imagePullSecrets" . | indent 6 }}
       serviceAccountName: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
-      # Add toleration for not scheduling on dedicated node
+    {{- with .Values.elasticsearch.client.tolerations }}
       tolerations:
-      - key: dedicated
-        value: "true"
-        effect: NoSchedule
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.elasticsearch.client.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
       # Weighted anti-affinity to disallow deploying client node to the same worker node as master node
       affinity:
         podAntiAffinity:
@@ -101,10 +104,14 @@ spec:
           name: transport
         - containerPort: 9600
           name: metrics
+    {{- with .Values.elasticsearch.client.readinessProbe}}
+        readinessProbe:
+{{ toYaml . | indent 10 }}
+    {{- end }}
+    {{- with .Values.elasticsearch.client.livenessProbe}}
         livenessProbe:
-          tcpSocket:
-            port: transport
-          initialDelaySeconds: 60
+{{ toYaml . | indent 10 }}
+    {{- end }}
         volumeMounts:
         {{- if .Values.elasticsearch.config }}
         - mountPath: {{ .Values.elasticsearch.configDirectory }}/elasticsearch.yml

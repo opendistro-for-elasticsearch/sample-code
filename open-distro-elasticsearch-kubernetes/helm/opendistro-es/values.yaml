@@ -1,7 +1,7 @@
 kibana:
   enabled: true
   image: amazon/opendistro-for-elasticsearch-kibana
-  imageTag: 0.8.0
+  imageTag: 0.9.0
   replicas: 1
   port: 5601
   externalPort: 443
@@ -12,6 +12,8 @@ kibana:
     requests:
       cpu: 500m
       memory: 512Mi
+  readinessProbe: []
+  livenessProbe: []
 
   elasticsearchAccount:
     secret: ""
@@ -46,6 +48,10 @@ kibana:
     #  - secretName: chart-example-tls
     #    hosts:
     #      - chart-example.local
+
+  service:
+    type: ClusterIP
+    annotations: {}
 
   config: {}
     ## Default Kibana configuration from kibana-docker.
@@ -142,6 +148,14 @@ elasticsearch:
     podDisruptionBudget:
       enabled: false
       minAvailable: 1
+    tolerations: []
+    readinessProbe: []
+    livenessProbe:
+      tcpSocket:
+        port: transport
+      initialDelaySeconds: 60
+      periodSeconds: 10
+    nodeSelector: {}
 
   data:
     replicas: 3
@@ -159,6 +173,14 @@ elasticsearch:
     podDisruptionBudget:
       enabled: false
       minAvailable: 1
+    tolerations: []
+    readinessProbe: []
+    livenessProbe:
+      tcpSocket:
+        port: transport
+      initialDelaySeconds: 60
+      periodSeconds: 10
+    nodeSelector: {}
 
   client:
     service:
@@ -204,6 +226,15 @@ elasticsearch:
     podDisruptionBudget:
       enabled: false
       minAvailable: 1
+    tolerations: []
+    readinessProbe: []
+    livenessProbe:
+      tcpSocket:
+        port: transport
+      initialDelaySeconds: 60
+      periodSeconds: 10
+    nodeSelector: {}
+
 
   config: {}
     ## Example Config
@@ -286,7 +317,7 @@ elasticsearch:
   maxMapCount: 262144
 
   image: amazon/opendistro-for-elasticsearch
-  imageTag: 0.8.0
+  imageTag: 0.9.0
 
   configDirectory: /usr/share/elasticsearch/config
 

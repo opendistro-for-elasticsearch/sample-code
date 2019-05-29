@@ -57,6 +57,14 @@ spec:
 {{ toYaml .Values.kibana.extraEnvs | indent 8 }}
 {{- end }}
         image: {{ .Values.kibana.image }}:{{ .Values.kibana.imageTag }}
+    {{- with .Values.kibana.readinessProbe}}
+        readinessProbe:
+{{ toYaml . | indent 10 }}
+    {{- end }}
+    {{- with .Values.kibana.livenessProbe}}
+        livenessProbe:
+{{ toYaml . | indent 10 }}
+    {{- end }}
         resources:
 {{ toYaml .Values.kibana.resources | indent 12 }}
         name: {{ template "opendistro-es.fullname" . }}-kibana

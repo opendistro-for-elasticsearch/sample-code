@@ -25,11 +25,14 @@ spec:
     spec:
 {{- include "opendistro-es.imagePullSecrets" . | indent 6 }}
       serviceAccountName: {{ template "opendistro-es.elasticsearch.serviceAccountName" . }}
-      # Add toleration for not scheduling on dedicated node
+    {{- with .Values.elasticsearch.master.tolerations }}
       tolerations:
-      - key: dedicated
-        value: "true"
-        effect: NoSchedule
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.elasticsearch.master.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
       # Anti-affinity to disallow deploying client and master nodes on the same worker node
       affinity:
         podAntiAffinity:
@@ -97,11 +100,14 @@ spec:
 {{- end }}
         resources:
 {{ toYaml .Values.elasticsearch.master.resources | indent 12 }}
+    {{- with .Values.elasticsearch.master.readinessProbe}}
+        readinessProbe:
+{{ toYaml . | indent 10 }}
+    {{- end }}
+    {{- with .Values.elasticsearch.master.livenessProbe}}
         livenessProbe:
-          tcpSocket:
-            port: transport
-          initialDelaySeconds: 60
-          periodSeconds: 10
+{{ toYaml . | indent 10 }}
+    {{- end }}
         # Official Image from Open Distro Team
         image: {{ .Values.elasticsearch.image }}:{{ .Values.elasticsearch.imageTag }}
         imagePullPolicy: Always
