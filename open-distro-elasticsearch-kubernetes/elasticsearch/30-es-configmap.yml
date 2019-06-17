@@ -35,7 +35,7 @@ data:
     discovery:
       zen:
         ping.unicast.hosts: ${DISCOVERY_SERVICE}
-        minimum_master_nodes: ${NUMBER_OF_MASTERS}
+        minimum_master_nodes: ${MIN_MASTERS}
 
     # TLS Configuration Transport Layer
     opendistro_security.ssl.transport.pemcert_filepath: elk-crt.pem

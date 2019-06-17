@@ -64,8 +64,8 @@ spec:
         env:
         - name: CLUSTER_NAME
           value: logs
-        - name: NUMBER_OF_MASTERS
-          value: "3"
+        - name: MIN_MASTERS
+          value: "2"
         - name: NODE_MASTER
           value: "false"
         - name: NODE_INGEST

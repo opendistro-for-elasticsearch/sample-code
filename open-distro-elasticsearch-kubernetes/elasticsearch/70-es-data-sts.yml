@@ -81,8 +81,8 @@ spec:
           value: "REPLACE_WITH_TLS_PRIVATE_KEY_PASSPHRASE" # Replace this with the passphrase for the TLS private key
         - name: HTTP_TLS_PEM_PASS
           value: "REPLACE_WITH_TLS_PRIVATE_KEY_PASSPHRASE" # Replace this with the passphrase for the TLS private key
-        - name: NUMBER_OF_MASTERS
-          value: "3"
+        - name: MIN_MASTERS
+          value: "2"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
