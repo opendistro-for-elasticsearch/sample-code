@@ -41,6 +41,14 @@ def get_args():
         help='the number of samples to Elasticsearch', action='store')
     parser.add_argument('-b', '--batch-size', type=int, default=1000,
         help='Number of log lines in each _bulk request', action='store')
+    parser.add_argument('-e', '--endpoint', type=str, action='store',
+                        default='https://127.0.0.1:9200',
+                        help='Elasticsearch REST endpoint for _bulk requests.')
+    parser.add_argument('--signed_requests', dest='signed_requests', default=False,
+                        action='store_true',
+                        help='''use AWS sigV4 signing for requests. Requires that '''
+                             '''you have installed and configured the AWS command '''
+                             '''line interface. Default is False.''')
     args = parser.parse_args()
     if args.devices < 0:
         raise ValueError('Number of devices must be positive')
@@ -69,10 +77,10 @@ def make_device():
 if __name__ == '__main__':
     args = get_args()
     buffer = FlushingESBuffer(
-        ESDescriptor(endpoint='https://127.0.0.1:9200', 
+        ESDescriptor(endpoint=args.endpoint, 
                      es_index='logs',
                      es_type='log'),
-        signed=False,
+        signed=args.signed_requests,
         flush_trigger=args.batch_size)
     devices = list() # pylint: disable=invalid-name
     for i in range(args.devices - 1):
