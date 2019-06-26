@@ -57,19 +57,19 @@ spec:
       containers:
       - name: elasticsearch
         env:
-        - name: CLUSTER_NAME
+        - name: cluster.name
           value: {{ .Values.global.clusterName }}
-        - name: NUMBER_OF_MASTERS
+        - name: discovery.zen.minimum_master_nodes
           value: {{ .Values.elasticsearch.master.replicas | quote }}
-        - name: NODE_MASTER
+        - name: node.master
           value: "true"
-        - name: NODE_INGEST
+        - name: node.ingest
           value: "false"
-        - name: NODE_DATA
+        - name: node.data
           value: "false"
-        - name: NETWORK_HOST
+        - name: network.host
           value: "0.0.0.0"
-        - name: HTTP_ENABLE
+        - name: http.enabled
           value: "true"
     {{- if .Values.elasticsearch.transportKeyPassphrase.enabled}}
         - name: TRANSPORT_KEY_PASSPHRASE
@@ -79,7 +79,7 @@ spec:
         - name: SSL_KEY_PASSPHRASE
           value: {{ .Values.elasticsearch.sslKeyPassphrase.passPhrase }}
     {{- end }}
-        - name: NODE_NAME
+        - name: node.name
           valueFrom:
             fieldRef:
               fieldPath: metadata.name

@@ -58,6 +58,9 @@ node.max_local_storage_nodes: 3
 
 This will only be done if `opendistro_security` is [not found](https://github.com/opendistro-for-elasticsearch/security/blob/dfc41db0d0123cd0965d40ee47d61266e560f7e6/tools/install_demo_configuration.sh#L194) in the `elasticsearch.yml` file. With this in mind, it's important to note that as a user, providing a complete configuration to both `kibana.config` and `elasticsearch.config` is required when working with custom certs, secrets, etc.
 
+### Notes About Using Custom Certs
+***All*** keys must be in the PKCS#5 v1.5 format to  work with the jdk. See [this](https://aws.amazon.com/blogs/opensource/add-ssl-certificates-open-distro-for-elasticsearch/) amazon article for more information about creating and using custom certs with opendistro elasticsearch.
+
 ## Certs, Secrets, and Configuration
 Prior to installation there are a number of secrets that can be defined that will get mounted into the
 different elasticsearch/kibana components.
@@ -317,13 +320,8 @@ elasticsearch:
     # See: https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/elasticsearch.yml.example#L27
     opendistro_security.roles_mapping_resolution: BOTH
     opendistro_security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
-    cluster:
-      name: ${CLUSTER_NAME}
+
     node:
-      master: ${NODE_MASTER}
-      data: ${NODE_DATA}
-      name: ${NODE_NAME}
-      ingest: ${NODE_INGEST}
       max_local_storage_nodes: 1
       attr.box_type: hot
 
@@ -333,17 +331,10 @@ elasticsearch:
 
     processors: ${PROCESSORS:1}
 
-    network.host: ${NETWORK_HOST}
-
     thread_pool.bulk.queue_size: 800
 
     http:
-      enabled: ${HTTP_ENABLE}
       compression: true
-
-    discovery:
-      zen:
-        minimum_master_nodes: ${NUMBER_OF_MASTERS}
 
     # TLS Configuration Transport Layer
     opendistro_security.ssl.transport.pemcert_filepath: elk-transport-crt.pem

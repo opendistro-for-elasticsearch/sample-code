@@ -66,19 +66,19 @@ spec:
       containers:
       - name: elasticsearch
         env:
-        - name: CLUSTER_NAME
+        - name: cluster.name
           value: {{ .Values.global.clusterName }}
-        - name: NODE_MASTER
+        - name: node.master
           value: "false"
-        - name: NODE_INGEST
+        - name: node.ingest
           value: "false"
-        - name: NETWORK_HOST
-          value: "_eth0_"
-        - name: HTTP_ENABLE
+        - name: network.host
+          value: "0.0.0.0"
+        - name: http.enabled
           value: "true"
-        - name: NUMBER_OF_MASTERS
+        - name: discovery.zen.minimum_master_nodes
           value: {{ .Values.elasticsearch.master.replicas | quote }}
-        - name: NODE_NAME
+        - name: node.name
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
@@ -88,7 +88,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: NODE_DATA
+        - name: node.data
           value: "true"
         - name: PROCESSORS
           valueFrom:
