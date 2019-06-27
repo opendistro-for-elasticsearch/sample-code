@@ -1,6 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
-
+{{ if .Values.elasticsearch.data.enabled }}
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet
@@ -193,3 +193,4 @@ spec:
       resources:
         requests:
           storage: {{ .Values.elasticsearch.data.storage }}
+{{- end }}
