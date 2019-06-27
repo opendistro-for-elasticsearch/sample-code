@@ -1,6 +1,6 @@
-{{- if .Values.elasticsearch.client.enabled }}
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
+{{- if .Values.elasticsearch.client.enabled }}
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
