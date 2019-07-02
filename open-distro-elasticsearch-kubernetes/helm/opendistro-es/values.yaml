@@ -135,6 +135,7 @@ elasticsearch:
       existingCertSecret:
 
   master:
+    enabled: true
     replicas: 3
     nodeAffinity: {}
     resources:
@@ -158,6 +159,7 @@ elasticsearch:
     nodeSelector: {}
 
   data:
+    enabled: true
     replicas: 3
     nodeAffinity: {}
     storageClassName: gp2-encrypted
@@ -183,6 +185,7 @@ elasticsearch:
     nodeSelector: {}
 
   client:
+    enabled: true
     service:
       type: ClusterIP
       annotations: {}

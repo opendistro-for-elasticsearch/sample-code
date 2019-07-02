@@ -1,4 +1,4 @@
-{{- if .Values.elasticsearch.client.ingress.enabled -}}
+{{- if and .Values.elasticsearch.client.ingress.enabled .Values.elasticsearch.client.enabled -}}
 {{- $fullName := printf "%s-%s"  (include "opendistro-es.fullname" .) "client-service" }}
 {{- $ingressPath := .Values.elasticsearch.client.ingress.path -}}
 kind: Ingress

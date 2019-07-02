@@ -1,6 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
-
+{{- if .Values.elasticsearch.master.enabled }}
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -212,7 +212,7 @@ spec:
           secretName: {{ .Values.elasticsearch.ssl.admin.existingCertSecret }}
       {{- end }}
       {{- if .Values.elasticsearch.securityConfig.actionGroupsSecret }}
-      - name: action-group
+      - name: action-groups
         secret:
           secretName: {{ .Values.elasticsearch.securityConfig.actionGroupsSecret }}
       {{- end }}
@@ -236,3 +236,4 @@ spec:
         secret:
           secretName: {{ .Values.elasticsearch.securityConfig.rolesMappingSecret }}
       {{- end -}}
+{{- end }}
