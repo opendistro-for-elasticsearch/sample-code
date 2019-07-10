@@ -82,8 +82,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if .Values.elasticsearch.discoveryOverride }}
+        - name: discovery.zen.ping.unicast.hosts
+          value: {{ .Values.elasticsearch.discoveryOverride }}
+        {{- else }}
         - name: discovery.zen.ping.unicast.hosts
           value: {{ template "opendistro-es.fullname" . }}-discovery
+        {{- end }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
