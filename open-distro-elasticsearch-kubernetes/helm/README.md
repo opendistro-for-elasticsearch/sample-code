@@ -353,6 +353,61 @@ elasticsearch:
       - CN=admin-prod
 ```
 
+#### Hot/Warm Architectures
+This chart supports traditional hot/warm/cold architectures. In order to enable this, there are a few sections that need to be added.
+
+Through the Helm `requirements.yaml`, an alias needs to be created. The below shows a typical hot/warm architecture, with the hot nodes residing in the original deployment and the warm nodes in the second aliased deployments.
+
+*Note that the repository should be the official repository when made available. It is currently set to a local copy of the chart*
+
+`requirements.yaml`:
+```
+  # Master / Ingest / Hot Nodes
+  - name: opendistro-es
+    version: ^0.0.1
+    repository: file://../opendistro-es/
+  # Warm Nodes
+  - name: opendistro-es
+    version: ^0.0.1
+    repository: file://../opendistro-es/
+    alias: opendistro-es-data-warm
+```
+
+After the `requirements.yaml` is configured, another instance of the chart can be defined in the `values.yaml` to provide the details of the warm environment. The benefit to using the alias attribute, is you can define as many different other environments as you want with some additional configuration options. 
+
+There are some key attributes here that should be considered.
+ - `elasticsearch.discoveryOverride`  Override for the service name deployed by the original chart alias. (Default: `*namespace*-*alias*-discovery`)
+ - `kibana.enabled: false`  Disables and prevent another instance of Kibana
+ - `elasticsearch.master.enabled: false`  Disables and prevent another instance of ES Master
+ - `elasticsearch.client.enabled: false`  Disables and prevent another instance of ES Ingest/Client
+
+*Note that the config is a snippet showing how you would enable index routing. Please find the [full configuration example here](#elasticsearchyml-config)*
+
+`values.yaml`
+```
+opendistro-es-data-warm:
+  kibana:
+    enabled: false
+  elasticsearch:
+    discoveryOverride: "elasticsearch-opendistro-es-discovery"
+    master:
+      enabled: false
+    client:
+      enabled: false
+    data:
+      enabled: true
+    config: 
+      node:
+        max_local_storage_nodes: 1
+        attr.box_type: warm
+```
+
+With this configured, an additional set of data nodes should be deployed and connected to your cluster. 
+
+It is then down to the business use-case to decide how data is routed to either hot/warm nodes using their aggregate of choice E.G. Logstash, Fluentd, Fluentbit etc. 
+
+For supporting automated migration of the data, use the [Elasticsearch Curator](https://github.com/helm/charts/tree/master/stable/elasticsearch-curator)
+
 #### logging.yml Config
 All values defined under `elasticsearch.loggingConfig` will be converted to yaml and mounted into the config directory.
 
@@ -397,6 +452,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `kibana.extraEnvs`                                        | Extra environments variables to be passed to kibana                                                                                                      | `[]`                                                                    |
 | `kibana.readinessProbe`                                   | Configuration for the [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                    | `[]`                                                                    |
 | `kibana.livenessProbe`                                    | Configuration for the [livenessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                     | `[]`                                                                    |
+| `elasticsearch.discoveryOverride`                         | For hot/warm architectures. Allows second aliased deployment to find cluster.                                                                            | `""`                                                                |
 | `elasticsearch.securityConfig.enabled`                    | Use custom [security configs](https://github.com/opendistro-for-elasticsearch/security/tree/master/securityconfig)                                       | `"true"`                                                                |
 | `elasticsearch.securityConfig.path`                       | Path to security config files                                                                                                                            | `"/usr/share/elasticsearch/plugins/opendistro_security/securityconfig"` |
 | `elasticsearch.securityConfig.actionGroupsSecret`         | Name of secret with [action_groups.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/action_groups.yml) defined   | `""`                                                                    |

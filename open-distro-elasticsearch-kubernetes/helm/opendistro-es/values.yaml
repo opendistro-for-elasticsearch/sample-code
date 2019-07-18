@@ -107,7 +107,9 @@ global:
 
 
 elasticsearch:
-
+  ## Used when deploying hot/warm architecture. Allows second aliased deployment to find cluster.
+  ## Default {{ template opendistro-es.fullname }}-discovery.
+  discoveryOverride: ""
   securityConfig:
     enabled: true
     path: "/usr/share/elasticsearch/plugins/opendistro_security/securityconfig"
