@@ -373,7 +373,7 @@ Through the Helm `requirements.yaml`, an alias needs to be created. The below sh
     alias: opendistro-es-data-warm
 ```
 
-After the `requirements.yaml` is configured. Another instance of the chart can be defined in the `values.yaml` to provide the details of the warm environment. The benefit to using the alias attribute, is you can define as many different other environments as you want with some additional configuration options. 
+After the `requirements.yaml` is configured, another instance of the chart can be defined in the `values.yaml` to provide the details of the warm environment. The benefit to using the alias attribute, is you can define as many different other environments as you want with some additional configuration options. 
 
 There are some key attributes here that should be considered.
  - `elasticsearch.discoveryOverride`  Override for the service name deployed by the original chart alias. (Default: `*namespace*-*alias*-discovery`)
@@ -381,7 +381,7 @@ There are some key attributes here that should be considered.
  - `elasticsearch.master.enabled: false`  Disables and prevent another instance of ES Master
  - `elasticsearch.client.enabled: false`  Disables and prevent another instance of ES Ingest/Client
 
-*Note that the config is a snippet showing how you would enable index routing. Please find the [full configuration example here](#elasticsearch.yml-Config)*
+*Note that the config is a snippet showing how you would enable index routing. Please find the [full configuration example here](#elasticsearchyml-config)*
 
 `values.yaml`
 ```
