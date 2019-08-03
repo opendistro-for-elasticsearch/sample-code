@@ -12,10 +12,11 @@ class ResultParser():
         the records() method to iterate over the response, retrieving a single
         Elasticsearch doc with each call. '''
 
-    def __init__(self, metric, response_text):
+    def __init__(self, metric, response_text, node_tracker):
         '''response_text is the body of the response to the GET request.'''
         self.response_json = json.loads(response_text)
         self.metric = metric
+        self.node_tracker = node_tracker
 
     def _unpack_record(self, fields, record):
         ''' Match the field names with their values in the record. If there's no
@@ -39,6 +40,7 @@ class ResultParser():
             have values for that metric, skipping dimensions that have
             "null". The null dimensions are stripped out in _unpack_record. '''
         for node_name, values in self.response_json.items():
+            node_ip = self.node_tracker.ip(node_name)
             timestamp = values['timestamp']
             data = values['data']
             if not data:
@@ -50,6 +52,7 @@ class ResultParser():
                 if not doc:
                     continue
                 doc['node_name'] = node_name
+                doc['node_ip'] = node_ip
                 doc['@timestamp'] = timestamp
                 doc['agg'] = self.metric.agg
                 yield doc

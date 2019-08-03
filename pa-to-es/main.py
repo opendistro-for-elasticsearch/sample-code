@@ -9,10 +9,11 @@ https://opendistro.github.io/for-elasticsearch-docs/docs/pa/reference/.
 '''
 
 import argparse
+from datetime import datetime
 import json
 
-from datetime import datetime
 import metric_descriptions
+from node_tracker import NodeTracker
 from pytz import timezone
 import requests
 from result_parser import ResultParser
@@ -23,7 +24,7 @@ class MetricGatherer():
         Analyzer. Call get_all_metrics() to receive a list of ES docs. '''
 
     def __init__(self):
-        pass
+        self.node_tracker = NodeTracker()
 
     def to_url_params(self, metric_description):
         '''Converts a metric description into the corresponding URL params'''
@@ -49,7 +50,7 @@ class MetricGatherer():
             if result.status_code != 200:
                 print("FAIL", metric, '\n', result.text)
             else:
-                rp = ResultParser(metric, result.text)
+                rp = ResultParser(metric, result.text, self.node_tracker)
                 for doc in rp.records():
                     docs.append(doc)
         return docs
@@ -63,6 +64,7 @@ class MetricWriter():
             and an ES type. '''
         self.index_name = args.index_name 
         self.index_type = args.index_type
+        self.seven = args.seven
 
     def now_pst(self):
         '''Return the current time in PST timezone'''
@@ -79,8 +81,13 @@ class MetricWriter():
                 timestamp. Otherwise weird stuff happens at midnight.'''
             index_name = "{}-{}".format(self.index_name,
                                         self.now_pst().strftime("%Y.%m.%d"))
-            control_line = '{{"index" : {{ "_index" : "{}", "_type": "{}" }} }}'
-            control_line = control_line.format(index_name, self.index_type)
+            if self.seven:
+                control_line = '{{"index" : {{ "_index" : "{}" }} }}'
+                control_line = control_line.format(index_name)
+            else:
+                control_line = '{{"index" : {{ "_index" : "{}", "_type": "{}" }} }}'
+                control_line = control_line.format(index_name, self.index_type)
+
             batch.append(control_line)
             batch.append(json.JSONEncoder().encode(doc))
 
@@ -104,6 +111,8 @@ def get_args():
     parser.add_argument('-t', '--index-type', type=str, default='log',
                         help='root string for the index type for performance indexes', 
                         action='store')
+    parser.add_argument('--seven', default=False, action='store_true',
+                        help='send data to ES 7 (removes type)')
     args = parser.parse_args()
     return args
 
@@ -113,7 +122,9 @@ if __name__ == '__main__':
             python3 main.py
 
         to run it. You can optionally set the ES index name (a timestamp is added
-        to the --index-name, rolling over daily) and ES type via command-line.
+        to the --index-name, rolling over daily) and ES type via command-line. For
+        Elasticsearch version 7 and beyond, set the --seven flag to prevent 
+        use of _types.
 
         It's a simple-minded, not-very-efficient loop that pulls all metrics
         formats them, and pushes to Elasticsearch.
