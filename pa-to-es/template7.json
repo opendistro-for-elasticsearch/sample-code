@@ -7,14 +7,12 @@
         "number_of_shards": 1
     },
     "mappings": {
-        "log": {
-            "properties": {
-                "@timestamp": {
-                    "type": "date"
-                },
-                "node_ip": {
-                    "type": "ip"
-                }
+        "properties": {
+            "@timestamp": {
+                "type": "date"
+            },
+            "node_ip": {
+                "type": "ip"
             }
         }
     }
