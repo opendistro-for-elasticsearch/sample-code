@@ -52,8 +52,9 @@ If the log output contains the following message, it means that the Elasticsearc
 Deploy the Elasticsearch client nodes using the command:
 
 ```
-kubectl apply -f `50-es-client-deploy.yml`
+kubectl apply -f 50-es-client-deploy.yml
 ```
+
 
 Check for the master node pods to come up using the command:
 
