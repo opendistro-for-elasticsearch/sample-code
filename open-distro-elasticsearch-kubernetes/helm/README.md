@@ -249,18 +249,18 @@ securityConfig:
 Example:
 ```
 ❯ cat config.yml
-opendistro_security:
+_meta:
+  type: "config"
+  config_version: 2
+config:
   dynamic:
+    filtered_alias_mode: "warn"
+    disable_rest_auth: false
+    disable_intertransport_auth: false
+    respect_request_indices_options: false
+    license: null
     kibana:
       multitenancy_enabled: true
-      server_username: atgdev_opendistro-es-svc
-      index: '.kibana'
-      do_not_fail_on_forbidden: false
-    authc:
-      ldap_service_accounts:
-        enabled: true
-        order: 1
-        http_authenticator:
 .......
 ❯ kubectl create secret generic -n logging security-config --from-file=config.yml
 ```
@@ -286,6 +286,7 @@ The following secrets are required:
 * `rolesSecret` - [roles.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/roles.yml)
 * `rolesMappingSecret` - [roles_mapping.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/roles_mapping.yml)
 * `internalUsersSecret` - [internal_users.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/internal_users.yml)
+* `tenantsSecret` - [tenants.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/tenants.yml)
 ```
 elasticsearch:
 
@@ -307,6 +308,8 @@ elasticsearch:
     rolesSecret: "roles-config"
     rolesMappingSecret: "roles-mapping-config"
     internalUsersSecret: "internal-users-config"
+    actionGroupsSecret: "action-groups-config"
+    tenantsSecret: "tenants-config"
 
 
   config:
@@ -331,7 +334,7 @@ elasticsearch:
 
     processors: ${PROCESSORS:1}
 
-    thread_pool.bulk.queue_size: 800
+    thread_pool.write.queue_size: 800
 
     http:
       compression: true
@@ -373,7 +376,7 @@ Through the Helm `requirements.yaml`, an alias needs to be created. The below sh
     alias: opendistro-es-data-warm
 ```
 
-After the `requirements.yaml` is configured, another instance of the chart can be defined in the `values.yaml` to provide the details of the warm environment. The benefit to using the alias attribute, is you can define as many different other environments as you want with some additional configuration options. 
+After the `requirements.yaml` is configured, another instance of the chart can be defined in the `values.yaml` to provide the details of the warm environment. The benefit to using the alias attribute, is you can define as many different other environments as you want with some additional configuration options.
 
 There are some key attributes here that should be considered.
  - `elasticsearch.discoveryOverride`  Override for the service name deployed by the original chart alias. (Default: `*namespace*-*alias*-discovery`)
@@ -396,15 +399,15 @@ opendistro-es-data-warm:
       enabled: false
     data:
       enabled: true
-    config: 
+    config:
       node:
         max_local_storage_nodes: 1
         attr.box_type: warm
 ```
 
-With this configured, an additional set of data nodes should be deployed and connected to your cluster. 
+With this configured, an additional set of data nodes should be deployed and connected to your cluster.
 
-It is then down to the business use-case to decide how data is routed to either hot/warm nodes using their aggregate of choice E.G. Logstash, Fluentd, Fluentbit etc. 
+It is then down to the business use-case to decide how data is routed to either hot/warm nodes using their aggregate of choice E.G. Logstash, Fluentd, Fluentbit etc.
 
 For supporting automated migration of the data, use the [Elasticsearch Curator](https://github.com/helm/charts/tree/master/stable/elasticsearch-curator)
 
@@ -452,7 +455,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `kibana.extraEnvs`                                        | Extra environments variables to be passed to kibana                                                                                                      | `[]`                                                                    |
 | `kibana.readinessProbe`                                   | Configuration for the [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                    | `[]`                                                                    |
 | `kibana.livenessProbe`                                    | Configuration for the [livenessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                     | `[]`                                                                    |
-| `elasticsearch.discoveryOverride`                         | For hot/warm architectures. Allows second aliased deployment to find cluster.                                                                            | `""`                                                                |
+| `elasticsearch.discoveryOverride`                         | For hot/warm architectures. Allows second aliased deployment to find cluster.                                                                            | `""`                                                                    |
 | `elasticsearch.securityConfig.enabled`                    | Use custom [security configs](https://github.com/opendistro-for-elasticsearch/security/tree/master/securityconfig)                                       | `"true"`                                                                |
 | `elasticsearch.securityConfig.path`                       | Path to security config files                                                                                                                            | `"/usr/share/elasticsearch/plugins/opendistro_security/securityconfig"` |
 | `elasticsearch.securityConfig.actionGroupsSecret`         | Name of secret with [action_groups.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/action_groups.yml) defined   | `""`                                                                    |
@@ -460,7 +463,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.securityConfig.internalUsersSecret`        | Name of secret with [internal_users.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/internal_users.yml) defined | `""`                                                                    |
 | `elasticsearch.securityConfig.rolesSecret`                | Name of secret with [roles.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/roles.yml) defined                   | `""`                                                                    |
 | `elasticsearch.securityConfig.rolesMappingSecret`         | Name of secret with [roles_mapping.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/roles_mapping.yml) defined   | `""`                                                                    |
-| `elasticsearch.securityConfig.rolesMappingSecret`         | Name of secret with [roles_mapping.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/roles_mapping.yml) defined   | `""`                                                                    |
+| `elasticsearch.securityConfig.tenantsSecret`              | Name of secret with [tenants.yml](https://github.com/opendistro-for-elasticsearch/security/blob/master/securityconfig/tenants.yml) defined               | `""`                                                                    |
 | `elasticsearch.ssl.transport.enabled`                     | Enable Transport SSL for Elasticsearch                                                                                                                   | `false`                                                                 |
 | `elasticsearch.ssl.transport.existingCertSecret`          | Name of secret that contains the transport certs                                                                                                         | `""`                                                                    |
 | `elasticsearch.ssl.rest.enabled`                          | Enable REST SSL for Elasticsearch                                                                                                                        | `false`                                                                 |
@@ -479,6 +482,9 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.master.nodeSelector`                       | Define which Nodes the master pods are scheduled on.                                                                                                     | `{}`                                                                    |
 | `elasticsearch.master.livenessProbe`                      | Configuration for the [livenessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                     | `[]`                                                                    |
 | `elasticsearch.master.readinessProbe`                     | Configuration for the [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                    | `[]`                                                                    |
+| `elasticsearch.master.updateStrategy`                     | The [updateStrategy](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#updating-statefulsets) for the master statefulset.    | `RollingUpdate`                                                         |
+| `elasticsearch.master.storageClassName`                     | Elasticsearch master storageClassName                                                                                                                  | `"gp2-encrypted"`                                                       |
+| `elasticsearch.master.storage`                              | Elasticsearch master storage                                                                                                                           | `"50Gi"`                                                                |
 | `elasticsearch.client.enabled`                            | Enables the Elasticsearch Client/Ingester                                                                                                                | `true`                                                                  |
 | `elasticsearch.client.replicas`                           | Number of Elasticsearch clients to spin up                                                                                                               | `3`                                                                     |
 | `elasticsearch.client.nodeAffinity`                       | Elasticsearch clients nodeAffinity                                                                                                                       | `{}`                                                                    |
@@ -498,7 +504,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.client.podDisruptionBudget.maxUnavailable` | Maximum number / percentage of pods that should remain scheduled                                                                                         | `""`                                                                    |
 | `elasticsearch.client.tolerations`                        | If specified, the elasticsearch client pod's tolerations.                                                                                                | `[]`                                                                    |
 | `elasticsearch.client.nodeSelector`                       | Define which Nodes the client pods are scheduled on.                                                                                                     | `{}`                                                                    |
-| `elasticsearch.data.enabled`                              | Enables the Elasticsearch Data Node                                                                                                                         | `true`                                                                  |
+| `elasticsearch.data.enabled`                              | Enables the Elasticsearch Data Node                                                                                                                      | `true`                                                                  |
 | `elasticsearch.data.replicas`                             | Number of Elasticsearch data nodes to spin up                                                                                                            | `3`                                                                     |
 | `elasticsearch.data.nodeAffinity`                         | Elasticsearch data nodeAffinity                                                                                                                          | `{}`                                                                    |
 | `elasticsearch.data.resources`                            | Elasticsearch data resource requests & limits                                                                                                            | `{}`                                                                    |
@@ -512,6 +518,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.data.nodeSelector`                         | Define which Nodes the data pods are scheduled on.                                                                                                       | `{}`                                                                    |
 | `elasticsearch.data.livenessProbe`                        | Configuration for the [livenessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                     | `[]`                                                                    |
 | `elasticsearch.data.readinessProbe`                       | Configuration for the [readinessProbe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)                    | `[]`                                                                    |
+| `elasticsearch.master.updateStrategy`                     | The [updateStrategy](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#updating-statefulsets) for the master statefulset.    | `RollingUpdate`                                                         |
 | `elasticsearch.config`                                    | Elasticsearch Configuration (`elasticsearch.yml`)                                                                                                        | `{}`                                                                    |
 | `elasticsearch.loggingConfig`                             | Elasticsearch Logging Configuration (`logging.yml`)                                                                                                      | see `values.yaml` for defaults                                          |
 | `elasticsearch.log4jConfig`                               | Elasticsearch log4j Configuration                                                                                                                        | `""`                                                                    |
@@ -528,6 +535,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.configDirectory`                           | Location of elasticsearch configuration                                                                                                                  | `"/usr/share/elasticsearch/config"`                                     |
 | `elasticsearch.maxMapCount`                               | elasticsearch max_map_count                                                                                                                              | `262144`                                                                |
 | `elasticsearch.extraEnvs`                                 | Extra environments variables to be passed to elasticsearch services                                                                                      | `[]`                                                                    |
+
 
 ## Acknowledgements
 * [Kalvin Chau](https://github.com/kalvinnchau) (Software Engineer - Viasat) for all his help with the Kubernetes internals, certs, and debugging

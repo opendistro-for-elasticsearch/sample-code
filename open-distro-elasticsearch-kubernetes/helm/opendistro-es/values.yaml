@@ -1,14 +1,14 @@
 kibana:
   enabled: true
   image: amazon/opendistro-for-elasticsearch-kibana
-  imageTag: 0.9.0
+  imageTag: 1.0.2
   replicas: 1
   port: 5601
   externalPort: 443
   resources:
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 2500m
+      memory: 2Gi
     requests:
       cpu: 500m
       memory: 512Mi
@@ -118,6 +118,7 @@ elasticsearch:
     internalUsersSecret:
     rolesSecret:
     rolesMappingSecret:
+    tenantsSecret:
 
   extraEnvs: []
 
@@ -139,7 +140,10 @@ elasticsearch:
   master:
     enabled: true
     replicas: 3
+    updateStrategy: "RollingUpdate"
     nodeAffinity: {}
+    storageClassName: gp2-encrypted
+    storage: 50Gi
     resources:
       limits:
         cpu: 1
@@ -163,6 +167,7 @@ elasticsearch:
   data:
     enabled: true
     replicas: 3
+    updateStrategy: "RollingUpdate"
     nodeAffinity: {}
     storageClassName: gp2-encrypted
     storage: 100Gi
@@ -322,7 +327,7 @@ elasticsearch:
   maxMapCount: 262144
 
   image: amazon/opendistro-for-elasticsearch
-  imageTag: 0.9.0
+  imageTag: 1.0.2
 
   configDirectory: /usr/share/elasticsearch/config
 
@@ -332,3 +337,7 @@ elasticsearch:
     # The name of the ServiceAccount to use.
     # If not set and create is true, a name is generated using the fullname template
     name:
+
+
+nameOverride: ""
+fullnameOverride: ""

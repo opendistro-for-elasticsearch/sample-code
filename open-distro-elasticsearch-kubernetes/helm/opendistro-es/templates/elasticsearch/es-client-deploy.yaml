@@ -61,23 +61,19 @@ spec:
         env:
         - name: cluster.name
           value: {{ .Values.global.clusterName }}
-        - name: discovery.zen.minimum_master_nodes
-          value: {{ .Values.elasticsearch.master.replicas | quote}}
         - name: node.master
           value: "false"
         - name: node.ingest
           value: "true"
         - name: node.data
           value: "false"
-        - name: http.enabled
-          value: "true"
         - name: network.host
           value: "0.0.0.0"
         - name: node.name
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: discovery.zen.ping.unicast.hosts
+        - name: discovery.seed_hosts
           value: {{ template "opendistro-es.fullname" . }}-discovery
         - name: KUBERNETES_NAMESPACE
           valueFrom:

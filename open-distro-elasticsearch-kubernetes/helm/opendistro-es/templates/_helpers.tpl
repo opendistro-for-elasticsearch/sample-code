@@ -97,3 +97,14 @@ imagePullSecrets:
 {{- end }}
 {{- end -}}
 {{- end -}}
+
+{{- define "master-nodes" -}}
+{{- template "opendistro-es.fullname" . -}}-master
+{{- end -}}
+
+{{- define "initial-master-nodes" -}}
+{{- $replicas := .Values.elasticsearch.master.replicas | int }}
+  {{- range $i, $e := untilStep 0 $replicas 1 -}}
+    {{ template "master-nodes" $ }}-{{ $i }},
+  {{- end -}}
+{{- end -}}
