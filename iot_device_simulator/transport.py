@@ -87,7 +87,8 @@ def _send_unsigned(method, url, body=None):
         wall_time(func, url, data=body,
                   headers={"Content-Type":"application/json"},
                   ### HACK ALERT !!! TODO TODO TODO ###
-                  auth=('admin', 'admin'),
+                  #Remove this if you're using Amazon Managed ElasticSearch, and no authentication enabled.
+                  #auth=('admin', 'admin'),
                   verify=False)
     print(result)
     return TransportResult(status=int(result.status_code),
