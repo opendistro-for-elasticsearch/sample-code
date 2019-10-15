@@ -11,7 +11,7 @@ metadata:
   name: {{ template "opendistro-es.fullname" . }}-data
   namespace: {{ .Release.Namespace }}
 spec:
-  serviceName: {{ template "opendistro-es.fullname" . }}-data
+  serviceName: {{ template "opendistro-es.fullname" . }}-data-svc
   replicas: {{ .Values.elasticsearch.data.replicas }}
   updateStrategy:
     type: {{ .Values.elasticsearch.data.updateStrategy }}

@@ -5,13 +5,13 @@ Due to the uniqueness of different users environments, this chart aims to cater 
 ## TL;DR
 ```
 ❯ helm package .
-❯ helm install opendistro-es-0.0.1.tgz --name opendistro-es
+❯ helm install opendistro-es-1.0.0.tgz --name opendistro-es
 ```
 
 ## Installing the Chart
 To install the chart with the release name `my-release`:
 
-`❯ helm install --name my-release opendistro-es-0.0.1.tgz`
+`❯ helm install --name my-release opendistro-es-1.0.0.tgz`
 
 The command deploys OpenDistro Kibana and Elasticsearch with its associated components (data statefulsets, masters, clients) on the Kubernetes cluster in the default configuration.
 
@@ -428,7 +428,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `global.imagePullSecrets`                                 | Global Docker registry secret names as an array                                                                                                          | `[]` (does not add image pull secrets to deployed pods)                 |
 | `kibana.enabled`                                          | Enable the installation of kibana                                                                                                                        | `true`                                                                  |
 | `kibana.image`                                            | Kibana container image                                                                                                                                   | `amazon/opendistro-for-elasticsearch-kibana`                            |
-| `kibana.imageTag`                                         | Kibana container image  tag                                                                                                                              | `0.9.0`                                                                 |
+| `kibana.imageTag`                                         | Kibana container image  tag                                                                                                                              | `1.2.0`                                                                 |
 | `kibana.replicas`                                         | Number of Kibana instances to deploy                                                                                                                     | `1`                                                                     |
 | `kibana.port`                                             | Internal Port for service                                                                                                                                | `5601`                                                                  |
 | `kibana.externalPort`                                     | External Port for service                                                                                                                                | `443`                                                                   |
@@ -527,7 +527,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.sslKeyPassphrase.enabled`                  | Elasticsearch ssl key passphrase required                                                                                                                | `false`                                                                 |
 | `elasticsearch.sslKeyPassphrase.passPhrase`               | Elasticsearch ssl key passphrase                                                                                                                         | `""`                                                                    |
 | `elasticsearch.image`                                     | Elasticsearch container image                                                                                                                            | `amazon/opendistro-for-elasticsearch`                                   |
-| `elasticsearch.imageTag`                                  | Elasticsearch container image  tag                                                                                                                       | `0.9.0`                                                                 |
+| `elasticsearch.imageTag`                                  | Elasticsearch container image  tag                                                                                                                       | `1.2.0`                                                                 |
 | `elasticsearch.serviceAccount.create`                     | Create a default serviceaccount for elasticsearch to use                                                                                                 | `true`                                                                  |
 | `elasticsearch.initContainer.image`                       | Init container image                                                                                                                                     | `busybox`                                                               |
 | `elasticsearch.initContainer.imageTag`                    | Init container image Tag                                                                                                                                 | `busybox`                                                               |
