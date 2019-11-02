@@ -6,7 +6,7 @@ These templates create a full Open Distro for Elasticsearch deployment, includin
 
 The deployment uses CloudFormation's [nested stacks](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-nested-stacks.html) to deploy a number of sub stacks. When complete, the architecture will look like this
 
-[Open Distro for Elasticsearch deployed in a VPC](https://github.com/Jon-AtAWS/community/blob/master/cloudformation-deployment/arch.png)
+![Open Distro for Elasticsearch deployed in a VPC](https://github.com/Jon-AtAWS/community/blob/master/cloudformation-deployment/arch.png)
 
 ## od4es.json
 
