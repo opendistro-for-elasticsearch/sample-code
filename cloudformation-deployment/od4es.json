@@ -1,0 +1,132 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Open Distro for Elasticsearch stack. **Attention** This template creates AWS resources that will incur charges on your account.",
+    "Parameters": {
+        "EnvironmentTag": {
+            "Description": "Enter Environment Tag",
+            "Type": "String",
+            "MinLength": 3,
+            "MaxLength": 10,
+            "AllowedPattern": "^[a-z][-a-z0-9]*$",
+            "Default": "od4es-cfn"
+        },
+        "CIDRPrefix": {
+            "Description": "Enter Class B CIDR Prefix (e.g. 192.168, 10.1, 172.16)",
+            "Type": "String",
+            "AllowedPattern": "(192\\.168)|10\\.[0-9][0-9]{0,1}|(172\\.([1][6-9]|[2][0-9]|[3][0-1]))",
+            "ConstraintDescription": "must be a valid Private Subnet CIDR Prefix between 192.168 or 10.{0-99} or 172.16",
+            "Default": "10.1"
+        },
+        "KeyName": {
+            "Description": "The EC2 Key Pair to allow SSH access to all the instances for this solution",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "MasterInstanceType": {
+            "Description": "The EC2 instance type for the master nodes in the cluster",
+            "Type": "String",
+            "Default": "m5.large",
+            "AllowedValues": ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge", "m5a.large", "m5a.xlarge", "m5a.2xlarge", "m5a.4xlarge", "m5n.large", "m5n.xlarge", "m5n.2xlarge", "m5n.4xlarge", "c5.large", "c5.xlarge", "c5.2xlarge", "c5.4xlarge", "c5n.large", "c5n.xlarge", "c5n.2xlarge", "c5n.4xlarge", "r5.large", "r5.xlarge", "r5.2xlarge", "r5.4xlarge", "r5a.large", "r5a.xlarge", "r5a.2xlarge", "r5a.4xlarge", "r5n.large", "r5n.xlarge", "r5n.2xlarge", "r5n.4xlarge"]
+        },
+        "DataInstanceType": {
+            "Description": "The EC2 instance type for the data nodes in the cluster",
+            "Type": "String",
+            "Default": "m5.large",
+            "AllowedValues": ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge", "m5a.large", "m5a.xlarge", "m5a.2xlarge", "m5a.4xlarge", "m5n.large", "m5n.xlarge", "m5n.2xlarge", "m5n.4xlarge", "c5.large", "c5.xlarge", "c5.2xlarge", "c5.4xlarge", "c5n.large", "c5n.xlarge", "c5n.2xlarge", "c5n.4xlarge", "r5.large", "r5.xlarge", "r5.2xlarge", "r5.4xlarge", "r5a.large", "r5a.xlarge", "r5a.2xlarge", "r5a.4xlarge", "r5n.large", "r5n.xlarge", "r5n.2xlarge", "r5n.4xlarge"]
+        },
+        "DataNodeCount": {
+            "Description": "The number of data nodes to deploy in the cluster",
+            "Type": "String",
+            "AllowedPattern": "^(\\d{1,2})",
+            "Default": "2"
+        },
+        "ClientInstanceType": {
+            "Description": "The EC2 instance type for the Kibana and client nodes in the cluster",
+            "Type": "String",
+            "Default": "m5.large",
+            "AllowedValues": ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge", "m5a.large", "m5a.xlarge", "m5a.2xlarge", "m5a.4xlarge", "m5n.large", "m5n.xlarge", "m5n.2xlarge", "m5n.4xlarge", "c5.large", "c5.xlarge", "c5.2xlarge", "c5.4xlarge", "c5n.large", "c5n.xlarge", "c5n.2xlarge", "c5n.4xlarge", "r5.large", "r5.xlarge", "r5.2xlarge", "r5.4xlarge", "r5a.large", "r5a.xlarge", "r5a.2xlarge", "r5a.4xlarge", "r5n.large", "r5n.xlarge", "r5n.2xlarge", "r5n.4xlarge"]
+        },
+        "ClientNodeCount": {
+            "Description": "The number of client/kibana nodes to deploy in the cluster",
+            "Type": "String",
+            "AllowedPattern": "^(\\d{1,2})",
+            "Default": "2"
+        }
+    },
+    "Resources": {
+        "Network": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://s3-us-west-2.amazonaws.com/odfe-cfn/network.json",
+                "Parameters": {
+                    "EnvironmentTag": {
+                        "Ref": "EnvironmentTag"
+                    },
+                    "CIDRPrefix": {
+                        "Ref": "CIDRPrefix"
+                    }
+                }
+            }
+        },
+        "Seed":{
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://s3-us-west-2.amazonaws.com/odfe-cfn/seed.json",
+                "Parameters": {
+                    "NetworkStackName" : { "Fn::GetAtt" : [ "Network", "Outputs.StackName" ] },
+                    "KeyName" : {"Ref" : "KeyName"},
+                    "MasterInstanceType": { "Ref": "MasterInstanceType" }
+                }
+            }
+        },
+        "DataNodes":{
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://s3-us-west-2.amazonaws.com/odfe-cfn/data-nodes.json",
+                "Parameters": {
+                    "NetworkStackName" : { "Fn::GetAtt" : [ "Network", "Outputs.StackName" ] },
+                    "KeyName" : {"Ref" : "KeyName"},
+                    "DataInstanceType": { "Ref": "DataInstanceType" },
+                    "DataNodeCount": { "Ref": "DataNodeCount" }
+                }
+            }
+        },
+        "MasterNodes":{
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://s3-us-west-2.amazonaws.com/odfe-cfn/master-nodes.json",
+                "Parameters": {
+                    "NetworkStackName" : { "Fn::GetAtt" : [ "Network", "Outputs.StackName" ] },
+                    "KeyName" : {"Ref" : "KeyName"},
+                    "MasterInstanceType": { "Ref": "MasterInstanceType" }
+                }
+            }
+        },
+        "ClientNodes":{
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://s3-us-west-2.amazonaws.com/odfe-cfn/client-nodes.json",
+                "Parameters": {
+                    "NetworkStackName" : { "Fn::GetAtt" : [ "Network", "Outputs.StackName" ] },
+                    "KeyName" : {"Ref" : "KeyName"},
+                    "ClientInstanceType": { "Ref": "ClientInstanceType" }
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "SSHKeyName": {
+            "Description": "SSH Key Name.",
+            "Value": {"Ref": "KeyName"},
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-SSHKeyName"
+                }
+            }
+        },
+        "NetworkStack": {
+            "Description": "Network stack name",
+            "Value": { "Fn::GetAtt" : [ "Network", "Outputs.StackName" ] }
+        }
+    }
+}

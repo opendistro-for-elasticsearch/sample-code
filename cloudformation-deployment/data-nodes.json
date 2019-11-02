@@ -1,0 +1,232 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Open Distro for Elasticsearch bootstrap master node.  **Attention** This template creates AWS resources that will incur charges on your account.",
+    "Parameters": {
+        "NetworkStackName": {
+            "Description": "Name of an active CloudFormation stack that contains the networking resources.",
+            "Type": "String"
+        },
+        "KeyName": {
+            "Description": "The EC2 Key Pair to allow SSH access to all the instances for this solution",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "DataInstanceType": {
+            "Description": "The EC2 instance type for the data nodes in the cluster",
+            "Type": "String",
+            "Default": "m5.large",
+            "AllowedValues": ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge", "m5a.large", "m5a.xlarge", "m5a.2xlarge", "m5a.4xlarge", "m5n.large", "m5n.xlarge", "m5n.2xlarge", "m5n.4xlarge", "c5.large", "c5.xlarge", "c5.2xlarge", "c5.4xlarge", "c5n.large", "c5n.xlarge", "c5n.2xlarge", "c5n.4xlarge", "r5.large", "r5.xlarge", "r5.2xlarge", "r5.4xlarge", "r5a.large", "r5a.xlarge", "r5a.2xlarge", "r5a.4xlarge", "r5n.large", "r5n.xlarge", "r5n.2xlarge", "r5n.4xlarge"]
+        },
+        "DataNodeCount": {
+            "Description": "The number of data nodes to deploy (1-99). *** Attention *** These resources do not fall in the AWS Free Tier. You will incur charges.",
+            "Type": "String",
+            "AllowedPattern": "^(\\d{1,2})",
+            "Default": "2"
+
+        }
+    },
+    "Mappings": {
+        "AWSAMIRegionMap":{
+            "ap-northeast-1": { "US1804HVM": "ami-0cd744adeca97abb1" },
+            "ap-northeast-2": { "US1804HVM": "ami-082bdb3b2d54d5a19" },
+            "ap-northeast-3": { "US1804HVM": "ami-0bd42271bb31d96d2" },
+            "ap-south-1": { "US1804HVM": "ami-0123b531fc646552f" },
+            "ap-southeast-1": { "US1804HVM": "ami-061eb2b23f9f8839c" },
+            "ap-southeast-2": { "US1804HVM": "ami-00a54827eb7ffcd3c" },
+            "ca-central-1": { "US1804HVM": "ami-0d0eaed20348a3389" },
+            "eu-central-1": { "US1804HVM": "ami-0cc0a36f626a4fdf5" },
+            "eu-north-1": { "US1804HVM": "ami-1dab2163" },
+            "eu-west-1": { "US1804HVM": "ami-02df9ea15c1778c9c" },
+            "eu-west-2": { "US1804HVM": "ami-0be057a22c63962cb" },
+            "eu-west-3": { "US1804HVM": "ami-087855b6c8b59a9e4" },
+            "sa-east-1": { "US1804HVM": "ami-02c8813f1ea04d4ab" },
+            "us-east-1": { "US1804HVM": "ami-04b9e92b5572fa0d1" },
+            "us-east-2": { "US1804HVM": "ami-0d5d9d301c853a04a" },
+            "us-west-1": { "US1804HVM": "ami-0dd655843c87b6930" },
+            "us-west-2": { "US1804HVM": "ami-06d51e91cea0dac8d" }
+        }
+    },
+    "Resources": {
+        "DataNodesLC": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Properties": {
+                "LaunchConfigurationName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-datanodes-lc"]]
+                },
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSAMIRegionMap", { "Ref": "AWS::Region" }, "US1804HVM"
+                    ]
+                },
+                "InstanceType": { "Ref": "DataInstanceType" },
+                "KeyName": { "Ref": "KeyName" },
+                "SecurityGroups": [{
+                    "Fn::ImportValue": {
+                        "Fn::Sub": "${NetworkStackName}-ESNodesSecurityGroup"
+                    }
+                }],
+                "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                     "#!/bin/bash -xe\n",
+                     "apt-get update\n",
+                     "apt-get -y install python-pip\n",
+                     "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
+                     "\n",
+                     "# Install the files and packages from the metadata\n",
+                     "/usr/local/bin/cfn-init -v ",
+                     "         --stack ", { "Ref" : "AWS::StackName" },
+                     "         --resource DataNodesLC ",
+                     "         --configsets default ",
+                     "         --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]}}
+            },
+            "Metadata":{
+                "AWS::CloudFormation::Init":{
+                    "configSets":{
+                        "default":["download", "install-odfe", "yml", "start-odfe"]
+                    },
+                    "download":{
+                        "commands" : {
+                            "010-add-repo": {
+                                "command" : "echo '\n' | add-apt-repository ppa:openjdk-r/ppa"
+                            },
+                            "020-apt-update": {
+                                "command": "yes | apt-get update"
+                            },
+                            "030-install-jdk": {
+                                "command": "yes | apt install openjdk-11-jdk"
+                            },
+                            "040-get-key": {
+                                "command": "wget -qO - https://d3g5vo6xdbdb9a.cloudfront.net/GPG-KEY-opendistroforelasticsearch | apt-key add -"
+                            },
+                            "050-add-sources": {
+                                "command": "echo \"deb https://d3g5vo6xdbdb9a.cloudfront.net/apt stable main\" | tee -a /etc/apt/sources.list.d/opendistroforelasticsearch.list"
+                            },
+                            "060-download-es-oss": {
+                                "command": "wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.2.0-amd64.deb"
+                            },
+                            "070-install-es-oss": {
+                                "command": "yes | dpkg -i elasticsearch-oss-7.2.0-amd64.deb"
+                            }
+                        }
+                    },
+                    "install-odfe": {
+                        "commands": {
+                            "010-apt-update": {
+                                "command": "yes | apt-get update"
+                            },
+                            "020-install-odfe": {
+                                "command": "yes | apt install opendistroforelasticsearch"
+                            }
+                        }
+                    },
+                    "yml": {
+                        "files": {
+                            "/etc/elasticsearch/elasticsearch.yml": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                        "cluster.name: od4es\n",
+                                        "node.name: data-node\n",
+                                        "path.data: /var/lib/elasticsearch\n",
+                                        "path.logs: /var/log/elasticsearch\n",
+                                        "network.host: 0.0.0.0\n",
+                                        "node.data: true\n",
+                                        "node.ingest: true\n",
+                                        "node.master: false\n",
+                                        "###############################################################\n",
+                                        "### Note: this IP is hard-coded for this instance from the\n",
+                                        "### CloudFormation template. This instance is manually deployed\n",
+                                        "### into public subnet 0 at IP address <prefix>.0.101 via the \n",
+                                        "### SeedNetworkInterface resource in the template.\n",
+                                        "discovery.seed_hosts: [\"",
+                                            { "Fn::ImportValue": { "Fn::Sub": "${NetworkStackName}-VPCCIDRPrefix" } },
+                                            ".0.101",
+                                        "\"]\n",
+                                        "###############################################################\n",
+                                        "### Note: this IP is hard-coded for this instance from the\n",
+                                        "### CloudFormation template. This instance is manually deployed\n",
+                                        "### into public subnet 0 at IP address <prefix>.0.101 via the \n",
+                                        "### SeedNetworkInterface resource in the template.\n",
+                                        "cluster.initial_master_nodes: [\"",
+                                            { "Fn::ImportValue": { "Fn::Sub": "${NetworkStackName}-VPCCIDRPrefix" } },
+                                            ".0.101",
+                                        "\"]\n",
+                                        "\n",
+                                        "opendistro_security.ssl.transport.pemcert_filepath: esnode.pem\n",
+                                        "opendistro_security.ssl.transport.pemkey_filepath: esnode-key.pem\n",
+                                        "opendistro_security.ssl.transport.pemtrustedcas_filepath: root-ca.pem\n",
+                                        "opendistro_security.ssl.transport.enforce_hostname_verification: false\n",
+                                        "opendistro_security.ssl.http.enabled: true\n",
+                                        "opendistro_security.ssl.http.pemcert_filepath: esnode.pem\n",
+                                        "opendistro_security.ssl.http.pemkey_filepath: esnode-key.pem\n",
+                                        "opendistro_security.ssl.http.pemtrustedcas_filepath: root-ca.pem\n",
+                                        "opendistro_security.allow_unsafe_democertificates: true\n",
+                                        "opendistro_security.allow_default_init_securityindex: true\n",
+                                        "opendistro_security.authcz.admin_dn:\n",
+                                        "  - CN=kirk,OU=client,O=client,L=test, C=de\n",
+                                        "\n",
+                                        "opendistro_security.audit.type: internal_elasticsearch\n",
+                                        "opendistro_security.enable_snapshot_restore_privilege: true\n",
+                                        "opendistro_security.check_snapshot_restore_write_privileges: true\n",
+                                        "opendistro_security.restapi.roles_enabled: [\"all_access\", \"security_rest_api_access\"]\n",
+                                        "cluster.routing.allocation.disk.threshold_enabled: false\n",
+                                        "node.max_local_storage_nodes: 3\n"
+                                        ]
+                                    ]
+                                },
+                                "mode":"000644",
+                                "owner":"root",
+                                "group":"root"
+                            }
+                        }
+                    },
+                    "start-odfe":{
+                        "commands" : {
+                            "010-name-uniquify": {
+                                "command": "sed -i \"s/node.name: data-node/node.name: data-$(uuidgen | cut -d - -f 1)/\" /etc/elasticsearch/elasticsearch.yml"
+                            },
+                            "010-enable_elasticsearch" : {
+                                "command" : "systemctl enable elasticsearch.service"
+                            },
+                            "020-start_elasticsearch" : {
+                                "command" : "systemctl start elasticsearch.service"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "DataNodesASG": {
+            "DependsOn": "DataNodesLC",
+            "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "Properties" : {
+                "AutoScalingGroupName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-datanodes-asg"]]
+                },
+                "MinSize": { "Ref": "DataNodeCount" },
+                "MaxSize": { "Ref": "DataNodeCount" },
+                "DesiredCapacity": { "Ref": "DataNodeCount" },
+                "LaunchConfigurationName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-datanodes-lc"]]
+                },
+                "VPCZoneIdentifier": [
+                    { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PrivateSubnetApp0"}},
+                    { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PrivateSubnetApp1"}}
+                ]
+            }
+        }
+    }
+}

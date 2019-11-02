@@ -1,0 +1,262 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Open Distro for Elasticsearch bootstrap master node.  **Attention** This template creates AWS resources that will incur charges on your account.",
+    "Parameters": {
+        "NetworkStackName": {
+            "Description": "Name of an active CloudFormation stack that contains the networking resources.",
+            "Type": "String"
+        },
+        "KeyName": {
+            "Description": "The EC2 Key Pair to allow SSH access to all the instances for this solution",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "ClientInstanceType": {
+            "Description": "The EC2 instance type for the client nodes in the cluster",
+            "Type": "String",
+            "Default": "m5.large"
+        },
+        "ClientNodeCount": {
+            "Description": "The number of client/kibana nodes to deploy in the cluster",
+            "Type": "String",
+            "AllowedPattern": "^(\\d{1,2})",
+            "Default": "2"
+        }
+    },
+    "Mappings": {
+        "AWSAMIRegionMap":{
+            "ap-northeast-1": { "US1804HVM": "ami-0cd744adeca97abb1" },
+            "ap-northeast-2": { "US1804HVM": "ami-082bdb3b2d54d5a19" },
+            "ap-northeast-3": { "US1804HVM": "ami-0bd42271bb31d96d2" },
+            "ap-south-1": { "US1804HVM": "ami-0123b531fc646552f" },
+            "ap-southeast-1": { "US1804HVM": "ami-061eb2b23f9f8839c" },
+            "ap-southeast-2": { "US1804HVM": "ami-00a54827eb7ffcd3c" },
+            "ca-central-1": { "US1804HVM": "ami-0d0eaed20348a3389" },
+            "eu-central-1": { "US1804HVM": "ami-0cc0a36f626a4fdf5" },
+            "eu-north-1": { "US1804HVM": "ami-1dab2163" },
+            "eu-west-1": { "US1804HVM": "ami-02df9ea15c1778c9c" },
+            "eu-west-2": { "US1804HVM": "ami-0be057a22c63962cb" },
+            "eu-west-3": { "US1804HVM": "ami-087855b6c8b59a9e4" },
+            "sa-east-1": { "US1804HVM": "ami-02c8813f1ea04d4ab" },
+            "us-east-1": { "US1804HVM": "ami-04b9e92b5572fa0d1" },
+            "us-east-2": { "US1804HVM": "ami-0d5d9d301c853a04a" },
+            "us-west-1": { "US1804HVM": "ami-0dd655843c87b6930" },
+            "us-west-2": { "US1804HVM": "ami-06d51e91cea0dac8d" }
+        }
+    },
+    "Resources": {
+        "ClientNodesLC": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Properties": {
+                "AssociatePublicIpAddress": true,
+                "LaunchConfigurationName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-clientnodes-lc"]]
+                },
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSAMIRegionMap", { "Ref": "AWS::Region" }, "US1804HVM"
+                    ]
+                },
+                "InstanceType": { "Ref": "ClientInstanceType" },
+                "KeyName": { "Ref": "KeyName" },
+                "SecurityGroups": [{
+                    "Fn::ImportValue": {
+                        "Fn::Sub": "${NetworkStackName}-ESNodesSecurityGroup"
+                    }
+                }],
+                "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                     "#!/bin/bash -xe\n",
+                     "apt-get update\n",
+                     "apt-get -y install python-pip\n",
+                     "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
+                     "\n",
+                     "# Install the files and packages from the metadata\n",
+                     "/usr/local/bin/cfn-init -v ",
+                     "         --stack ", { "Ref" : "AWS::StackName" },
+                     "         --resource ClientNodesLC ",
+                     "         --configsets default ",
+                     "         --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]}}
+            },
+            "Metadata":{
+                "AWS::CloudFormation::Init":{
+                    "configSets":{
+                        "default":["download", "install-odfe", "yml", "start-odfe"]
+                    },
+                    "download":{
+                        "commands" : {
+                            "010-add-repo": {
+                                "command" : "echo '\n' | add-apt-repository ppa:openjdk-r/ppa"
+                            },
+                            "020-apt-update": {
+                                "command": "yes | apt-get update"
+                            },
+                            "030-install-jdk": {
+                                "command": "yes | apt install openjdk-11-jdk"
+                            },
+                            "040-get-key": {
+                                "command": "wget -qO - https://d3g5vo6xdbdb9a.cloudfront.net/GPG-KEY-opendistroforelasticsearch | apt-key add -"
+                            },
+                            "050-add-sources": {
+                                "command": "echo \"deb https://d3g5vo6xdbdb9a.cloudfront.net/apt stable main\" | tee -a /etc/apt/sources.list.d/opendistroforelasticsearch.list"
+                            },
+                            "060-download-es-oss": {
+                                "command": "wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.2.0-amd64.deb"
+                            },
+                            "070-install-es-oss": {
+                                "command": "yes | dpkg -i elasticsearch-oss-7.2.0-amd64.deb"
+                            }
+                        }
+                    },
+                    "install-odfe": {
+                        "commands": {
+                            "010-apt-update": {
+                                "command": "yes | apt-get update"
+                            },
+                            "020-install-odfe": {
+                                "command": "yes | apt install opendistroforelasticsearch"
+                            },
+                            "030-install-kibana": {
+                                "command": "yes | apt install opendistroforelasticsearch-kibana"
+                            }
+                        }
+                    },
+                    "yml": {
+                        "files": {
+                            "/etc/elasticsearch/elasticsearch.yml": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                        "cluster.name: od4es\n",
+                                        "node.name: client-node\n",
+                                        "path.data: /var/lib/elasticsearch\n",
+                                        "path.logs: /var/log/elasticsearch\n",
+                                        "network.host: 0.0.0.0\n",
+                                        "node.data: false\n",
+                                        "node.ingest: false\n",
+                                        "node.master: false\n",
+                                        "###############################################################\n",
+                                        "### Note: this IP is hard-coded for this instance from the\n",
+                                        "### CloudFormation template. This instance is manually deployed\n",
+                                        "### into public subnet 0 at IP address <prefix>.0.101 via the \n",
+                                        "### SeedNetworkInterface resource in the template.\n",
+                                        "discovery.seed_hosts: [\"",
+                                            { "Fn::ImportValue": { "Fn::Sub": "${NetworkStackName}-VPCCIDRPrefix" } },
+                                            ".0.101",
+                                        "\"]\n",
+                                        "###############################################################\n",
+                                        "### Note: this IP is hard-coded for this instance from the\n",
+                                        "### CloudFormation template. This instance is manually deployed\n",
+                                        "### into public subnet 0 at IP address <prefix>.0.101 via the \n",
+                                        "### SeedNetworkInterface resource in the template.\n",
+                                        "cluster.initial_master_nodes: [\"",
+                                            { "Fn::ImportValue": { "Fn::Sub": "${NetworkStackName}-VPCCIDRPrefix" } },
+                                            ".0.101",
+                                        "\"]\n",
+                                        "\n",
+                                        "opendistro_security.ssl.transport.pemcert_filepath: esnode.pem\n",
+                                        "opendistro_security.ssl.transport.pemkey_filepath: esnode-key.pem\n",
+                                        "opendistro_security.ssl.transport.pemtrustedcas_filepath: root-ca.pem\n",
+                                        "opendistro_security.ssl.transport.enforce_hostname_verification: false\n",
+                                        "opendistro_security.ssl.http.enabled: true\n",
+                                        "opendistro_security.ssl.http.pemcert_filepath: esnode.pem\n",
+                                        "opendistro_security.ssl.http.pemkey_filepath: esnode-key.pem\n",
+                                        "opendistro_security.ssl.http.pemtrustedcas_filepath: root-ca.pem\n",
+                                        "opendistro_security.allow_unsafe_democertificates: true\n",
+                                        "opendistro_security.allow_default_init_securityindex: true\n",
+                                        "opendistro_security.authcz.admin_dn:\n",
+                                        "  - CN=kirk,OU=client,O=client,L=test, C=de\n",
+                                        "\n",
+                                        "opendistro_security.audit.type: internal_elasticsearch\n",
+                                        "opendistro_security.enable_snapshot_restore_privilege: true\n",
+                                        "opendistro_security.check_snapshot_restore_write_privileges: true\n",
+                                        "opendistro_security.restapi.roles_enabled: [\"all_access\", \"security_rest_api_access\"]\n",
+                                        "cluster.routing.allocation.disk.threshold_enabled: false\n",
+                                        "node.max_local_storage_nodes: 3\n"
+                                         ]
+                                    ]
+                                },
+                                "mode":"000644",
+                                "owner":"root",
+                                "group":"root"
+                            },
+                            "/etc/kibana/kibana.yml": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                        "elasticsearch.hosts: [\"https://localhost:9200\"]\n",
+                                        "server.host: 0.0.0.0\n",
+                                        "elasticsearch.ssl.verificationMode: none\n",
+                                        "elasticsearch.username: kibanaserver\n",
+                                        "elasticsearch.password: kibanaserver\n",
+                                        "elasticsearch.requestHeadersWhitelist: [\"securitytenant\",\"Authorization\"]\n",
+                                        "\n",
+                                        "opendistro_security.multitenancy.enabled: true\n",
+                                        "opendistro_security.multitenancy.tenants.preferred: [\"Private\", \"Global\"]\n",
+                                        "opendistro_security.readonly_mode.roles: [\"kibana_read_only\"]\n"
+                                        ]
+                                    ]
+                                },
+                                "mode":"000644",
+                                "owner":"root",
+                                "group":"root"
+                            }
+                        }
+                    },
+                    "start-odfe":{
+                        "commands" : {
+                            "010-name-uniquify": {
+                                "command": "sed -i \"s/node.name: client-node/node.name: client-$(uuidgen | cut -d - -f 1)/\" /etc/elasticsearch/elasticsearch.yml"
+                            },
+                            "020-enable_elasticsearch" : {
+                                "command" : "systemctl enable elasticsearch.service"
+                            },
+                            "030-start_elasticsearch" : {
+                                "command" : "systemctl start elasticsearch.service"
+                            },                            
+                            "040-enable_kibana" : {
+                                "command" : "systemctl enable kibana.service"
+                            },
+                            "050-start_kibana" : {
+                                "command" : "systemctl start kibana.service"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ClientNodesASG": {
+            "DependsOn": "ClientNodesLC",
+            "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "Properties" : {
+                "AutoScalingGroupName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-clientnodes-asg"]]
+                },
+                "MinSize": { "Ref": "ClientNodeCount" },
+                "MaxSize": { "Ref": "ClientNodeCount" },
+                "DesiredCapacity": { "Ref": "ClientNodeCount" },
+                "LaunchConfigurationName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-clientnodes-lc"]]
+                },
+                "VPCZoneIdentifier": [
+                    { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PublicSubnet0"}},
+                    { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PublicSubnet1"}}
+                ]
+            }
+        }
+    }
+}
