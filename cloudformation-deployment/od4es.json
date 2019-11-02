@@ -127,6 +127,14 @@
         "NetworkStack": {
             "Description": "Network stack name",
             "Value": { "Fn::GetAtt" : [ "Network", "Outputs.StackName" ] }
+        },
+        "ClientNodesASG": {
+            "Description": "AutoScaling group. Examine the instances in this group to get the public IPs to connect with Kibana and to send bulk and query API requests.",
+            "Value": { 
+                "Fn::ImportValue": { 
+                    "Fn::Sub": "${ClientNodes}-AutoScalingGroup"
+                }            
+            }
         }
     }
 }

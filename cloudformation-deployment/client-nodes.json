@@ -258,5 +258,16 @@
                 ]
             }
         }
+    },
+    "Outputs": {
+        "AutoScalingGroup": {
+            "Description": "Client nodes autoscaling group.",
+            "Value": {"Ref": "ClientNodesASG"},
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-ClientNodesASG"
+                }
+            }
+        }
     }
 }
