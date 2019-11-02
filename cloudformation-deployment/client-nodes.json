@@ -12,7 +12,7 @@
             "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
         },
         "ClientInstanceType": {
-            "Description": "The EC2 instance type for the data nodes in the cluster",
+            "Description": "The EC2 instance type for the client nodes in the cluster",
             "Type": "String",
             "Default": "m5.large"
         },
@@ -45,34 +45,27 @@
         }
     },
     "Resources": {
-        "ClientNode": {
-            "Type": "AWS::EC2::Instance",
+        "ClientNodesLC": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
-                "InstanceType": { "Ref": "ClientInstanceType" },
+                "AssociatePublicIpAddress": true,
+                "LaunchConfigurationName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-clientnodes-lc"]]
+                },
                 "ImageId": {
                     "Fn::FindInMap": [
-                        "AWSAMIRegionMap", { "Ref": "AWS::Region" },
-                        "US1804HVM"
+                        "AWSAMIRegionMap", { "Ref": "AWS::Region" }, "US1804HVM"
                     ]
                 },
+                "InstanceType": { "Ref": "ClientInstanceType" },
                 "KeyName": { "Ref": "KeyName" },
-                "NetworkInterfaces": [ {
-                    "AssociatePublicIpAddress": "true",
-                    "DeviceIndex": "0",
-                    "GroupSet": [{"Fn::ImportValue": {
-                            "Fn::Sub": "${NetworkStackName}-ESNodesSecurityGroup"
-                        }
-                    }],
-                    "SubnetId": {"Fn::ImportValue": {"Fn::Sub": "${NetworkStackName}-PublicSubnet0"}}
-                    }],
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["", [{
-                            "Fn::ImportValue": {
-                                "Fn::Sub": "${NetworkStackName}-EnvTag"
-                            }
-                        }, "-client"]]
+                "SecurityGroups": [{
+                    "Fn::ImportValue": {
+                        "Fn::Sub": "${NetworkStackName}-ESNodesSecurityGroup"
                     }
                 }],
                 "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
@@ -84,7 +77,7 @@
                      "# Install the files and packages from the metadata\n",
                      "/usr/local/bin/cfn-init -v ",
                      "         --stack ", { "Ref" : "AWS::StackName" },
-                     "         --resource ClientNode ",
+                     "         --resource ClientNodesLC ",
                      "         --configsets default ",
                      "         --region ", { "Ref" : "AWS::Region" }, "\n"
                 ]]}}
@@ -92,7 +85,7 @@
             "Metadata":{
                 "AWS::CloudFormation::Init":{
                     "configSets":{
-                        "default":["download", "install-odfe", "mk-kibana-dir", "yml", "start-odfe"]
+                        "default":["download", "install-odfe", "yml", "start-odfe"]
                     },
                     "download":{
                         "commands" : {
@@ -129,16 +122,6 @@
                             },
                             "030-install-kibana": {
                                 "command": "yes | apt install opendistroforelasticsearch-kibana"
-                            }
-                        }
-                    },
-                    "mk-kibana-dir": {
-                        "commands": {
-                            "010-mkdir-kibana": {
-                                "command": "mkdir /var/log/kibana"
-                            },
-                            "020-chown-kibana": {
-                                "command": "chown kibana:kibana /var/log/kibana"
                             }
                         }
                     },
@@ -195,7 +178,7 @@
                                         "opendistro_security.restapi.roles_enabled: [\"all_access\", \"security_rest_api_access\"]\n",
                                         "cluster.routing.allocation.disk.threshold_enabled: false\n",
                                         "node.max_local_storage_nodes: 3\n"
-                                        ]
+                                         ]
                                     ]
                                 },
                                 "mode":"000644",
@@ -216,9 +199,7 @@
                                         "\n",
                                         "opendistro_security.multitenancy.enabled: true\n",
                                         "opendistro_security.multitenancy.tenants.preferred: [\"Private\", \"Global\"]\n",
-                                        "opendistro_security.readonly_mode.roles: [\"kibana_read_only\"]\n",
-                                        "logging.dest: /var/log/kibana/kibana.log\n",
-                                        "logging.verbose: true\n"
+                                        "opendistro_security.readonly_mode.roles: [\"kibana_read_only\"]\n"
                                         ]
                                     ]
                                 },
@@ -249,16 +230,32 @@
                     }
                 }
             }
-        }
-    },
-    "Outputs": {
-        "ClientNodeIp": {
-            "Description": "Client node Public IP address.",
-            "Value": { "Fn::GetAtt": ["ClientNode","PublicIp"] },
-            "Export": {
-                "Name": {
-                    "Fn::Sub": "${AWS::StackName}-ClientNodeIp"
-                }
+        },
+        "ClientNodesASG": {
+            "DependsOn": "ClientNodesLC",
+            "Type" : "AWS::AutoScaling::AutoScalingGroup",
+            "Properties" : {
+                "AutoScalingGroupName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-clientnodes-asg"]]
+                },
+                "MinSize": { "Ref": "ClientNodeCount" },
+                "MaxSize": { "Ref": "ClientNodeCount" },
+                "DesiredCapacity": { "Ref": "ClientNodeCount" },
+                "LaunchConfigurationName": {
+                    "Fn::Join": ["", [{
+                        "Fn::ImportValue": {
+                            "Fn::Sub": "${NetworkStackName}-EnvTag"
+                        }
+                    }, "-clientnodes-lc"]]
+                },
+                "VPCZoneIdentifier": [
+                    { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PublicSubnet0"}},
+                    { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PublicSubnet1"}}
+                ]
             }
         }
     }
