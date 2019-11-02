@@ -133,7 +133,7 @@
             "Metadata":{
                 "AWS::CloudFormation::Init":{
                     "configSets":{
-                        "default":["download", "install-odfe", "mk-kibana-dir", "yml", "start-odfe"]
+                        "default":["download", "install-odfe", "yml", "start-odfe"]
                     },
                     "download":{
                         "commands" : {
@@ -167,19 +167,6 @@
                             },
                             "020-install-odfe": {
                                 "command": "yes | apt install opendistroforelasticsearch"
-                            },
-                            "030-install-kibana": {
-                                "command": "yes | apt install opendistroforelasticsearch-kibana"
-                            }
-                        }
-                    },
-                    "mk-kibana-dir": {
-                        "commands": {
-                            "010-mkdir-kibana": {
-                                "command": "mkdir /var/log/kibana"
-                            },
-                            "020-chown-kibana": {
-                                "command": "chown kibana:kibana /var/log/kibana"
                             }
                         }
                     },
@@ -242,30 +229,6 @@
                                 "mode":"000644",
                                 "owner":"root",
                                 "group":"root"
-                            },
-                            "/etc/kibana/kibana.yml": {
-                                "content": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                        "elasticsearch.hosts: [\"https://localhost:9200\"]\n",
-                                        "server.host: 0.0.0.0\n",
-                                        "elasticsearch.ssl.verificationMode: none\n",
-                                        "elasticsearch.username: kibanaserver\n",
-                                        "elasticsearch.password: kibanaserver\n",
-                                        "elasticsearch.requestHeadersWhitelist: [\"securitytenant\",\"Authorization\"]\n",
-                                        "\n",
-                                        "opendistro_security.multitenancy.enabled: true\n",
-                                        "opendistro_security.multitenancy.tenants.preferred: [\"Private\", \"Global\"]\n",
-                                        "opendistro_security.readonly_mode.roles: [\"kibana_read_only\"]\n",
-                                        "logging.dest: /var/log/kibana/kibana.log\n",
-                                        "logging.verbose: true\n"
-                                        ]
-                                    ]
-                                },
-                                "mode":"000644",
-                                "owner":"root",
-                                "group":"root"
                             }
                         }
                     },
@@ -276,12 +239,6 @@
                             },
                             "02start_elasticsearch" : {
                                 "command" : "systemctl start elasticsearch.service"
-                            },                            
-                            "03enable_kibana" : {
-                                "command" : "systemctl enable kibana.service"
-                            },
-                            "04start_kibana" : {
-                                "command" : "systemctl start kibana.service"
                             }
                         }
                     }
