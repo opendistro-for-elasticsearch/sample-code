@@ -5,5 +5,4 @@ for file in od4es.json network.json seed.json data-nodes.json master-nodes.json 
     echo "Sending $file"
     aws s3 rm s3://$bucket/$file
     aws s3 cp $file s3://$bucket/$file
-    aws s3api put-object-acl --bucket $bucket --key $file --acl public-read
 done

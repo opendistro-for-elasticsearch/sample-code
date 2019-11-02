@@ -15,6 +15,12 @@
             "Description": "The EC2 instance type for the data nodes in the cluster",
             "Type": "String",
             "Default": "m5.large"
+        },
+        "ClientNodeCount": {
+            "Description": "The number of client/kibana nodes to deploy in the cluster",
+            "Type": "String",
+            "AllowedPattern": "^(\\d{1,2})",
+            "Default": "2"
         }
     },
     "Mappings": {
