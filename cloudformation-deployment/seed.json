@@ -153,10 +153,10 @@
                                 "command": "echo \"deb https://d3g5vo6xdbdb9a.cloudfront.net/apt stable main\" | tee -a /etc/apt/sources.list.d/opendistroforelasticsearch.list"
                             },
                             "060-download-es-oss": {
-                                "command": "wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.2.0-amd64.deb"
+                                "command": "wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.2.1-amd64.deb"
                             },
                             "070-install-es-oss": {
-                                "command": "yes | dpkg -i elasticsearch-oss-7.2.0-amd64.deb"
+                                "command": "yes | dpkg -i elasticsearch-oss-7.2.1-amd64.deb"
                             }
                         }
                     },
@@ -178,7 +178,7 @@
                                         "",
                                         [
                                         "cluster.name: od4es\n",
-                                        "node.name: od4es-master\n",
+                                        "node.name: od4es-seed\n",
                                         "node.master: true\n",
                                         "node.data: true\n",
                                         "node.ingest: false\n",
