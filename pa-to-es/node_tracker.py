@@ -16,15 +16,17 @@ class NodeTracker():
         ip address. Construct the object, then use ip() to retrieve the 
         address from the node name.'''
 
-    def __init__(self):
+    def __init__(self, args):
         ''' Constructs a local dict, and fills it.'''
+        self._args = args
         self._nodes_map = dict()
         self._retrieve_node_ids_and_ips()
 
     def _retrieve_node_ids_and_ips(self):
         ''' Use _cat/nodes to pull the name and IP for all of the nodes in
             the cluster. '''
-        response = requests.get('https://localhost:9200/_nodes',
+        url = 'https://{}:9200/_nodes'.format(self._args.endpoint)
+        response = requests.get(url,
             ### HACK ALERT !!! TODO TODO TODO!!! Add real auth ###
             auth=('admin', 'admin'),
             verify=False)

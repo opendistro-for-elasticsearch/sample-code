@@ -5,6 +5,10 @@ SPDX-License-Identifier: MIT-0
  result_parser provides a class that takes the results of calling the performance
  analyzer and putting together a document suitable for sending to Elasticsearch
  '''
+
+import datetime
+import pytz
+
 import json
 
 class ResultParser():
@@ -29,6 +33,21 @@ class ResultParser():
             ret[field_name] = value
         return ret
 
+    @staticmethod
+    def pacific_time(unix_time):
+        '''Convert a timestamp (in microseconds) to an isoformat string. 
+           Assumes the timestamp is US/Pacific time, which will be wrong
+           for a lot of people. TODO: figure out how to make PA return
+           UTC and then do this conversion correctly.
+
+           unix_time is an integer unix time in microseconds
+        '''
+        timestamp = unix_time / 1000
+        timestamp = datetime.datetime.fromtimestamp(timestamp)
+        timezone = pytz.timezone("America/Los_Angeles")
+        timestamp = timezone.localize(timestamp)
+        return timestamp.isoformat()
+
     def records(self):
         ''' Iterates the response, yielding one dict at a time with a single
             metric and dimension
@@ -41,10 +60,10 @@ class ResultParser():
             "null". The null dimensions are stripped out in _unpack_record. '''
         for node_name, values in self.response_json.items():
             node_ip = self.node_tracker.ip(node_name)
-            timestamp = values['timestamp']
             data = values['data']
             if not data:
                 break
+            timestamp = ResultParser.pacific_time(int(values['timestamp']))
             field_names = [x['name'] for x in data['fields']]
             records = data['records']
             for record in records:

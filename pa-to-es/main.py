@@ -23,8 +23,9 @@ class MetricGatherer():
     ''' Use this class to retrieve metrics from Open Distro's Performance
         Analyzer. Call get_all_metrics() to receive a list of ES docs. '''
 
-    def __init__(self):
-        self.node_tracker = NodeTracker()
+    def __init__(self, args):
+        self.node_tracker = NodeTracker(args)
+        self.args = args
 
     def to_url_params(self, metric_description):
         '''Converts a metric description into the corresponding URL params'''
@@ -36,7 +37,8 @@ class MetricGatherer():
         ''' Retrieves data for the metric represented by metric_description from 
             the Performance Analyzer API. Returns the full result from the 
             HTTP Requests library. '''
-        BASE_URL = 'http://localhost:9600/_opendistro/_performanceanalyzer/metrics?'
+        BASE_URL = 'http://{}:9600/_opendistro/_performanceanalyzer/metrics?'
+        BASE_URL = BASE_URL.format(self.args.endpoint)
         url = "{}{}".format(BASE_URL, self.to_url_params(metric_description))
         return requests.get(url)
 
@@ -65,6 +67,7 @@ class MetricWriter():
         self.index_name = args.index_name 
         self.index_type = args.index_type
         self.seven = args.seven
+        self.endpoint = args.endpoint
 
     def now_pst(self):
         '''Return the current time in PST timezone'''
@@ -93,7 +96,7 @@ class MetricWriter():
 
         bulk = '\n'.join(batch) + '\n'
         print("Sending batch of {} characters".format(len(bulk)))
-        result = requests.post('https://localhost:9200/_bulk', 
+        result = requests.post('https://{}:9200/_bulk'.format(self.endpoint), 
                                data=bulk,
                                headers={'Content-Type':'application/json'},
                                ### HACK ALERT !!! TODO TODO TODO ###
@@ -113,6 +116,9 @@ def get_args():
                         action='store')
     parser.add_argument('--seven', default=False, action='store_true',
                         help='send data to ES 7 (removes type)')
+    parser.add_argument('-e', '--endpoint', default='localhost', type=str,
+                        help='the Open Distro for Elasticsearch endpoint',
+                        action='store')
     args = parser.parse_args()
     return args
 
@@ -135,6 +141,6 @@ if __name__ == '__main__':
         bulk, rather than one at a time.''' 
     while 1:
         print('Gathering docs')
-        docs = MetricGatherer().get_all_metrics()
+        docs = MetricGatherer(get_args()).get_all_metrics()
         print('Sending docs: ', len(docs))
         MetricWriter(get_args()).put_doc_batches(docs)
