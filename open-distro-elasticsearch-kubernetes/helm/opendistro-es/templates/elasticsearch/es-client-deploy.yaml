@@ -22,8 +22,8 @@ spec:
         {{- if .Values.elasticsearch.config }}
         configchecksum: {{ include (print .Template.BasePath "/elasticsearch/es-config-secret.yaml") . | sha256sum | trunc 63 }}
         {{- end }}
-{{- if .Values.elasticsearch.client.annotations }}
-{{ toYaml .Values.elasticsearch.client.annotations | indent 8 }}
+{{- if .Values.elasticsearch.client.podAnnotations }}
+{{ toYaml .Values.elasticsearch.client.podAnnotations | indent 8 }}
 {{- end }}
     spec:
 {{- include "opendistro-es.imagePullSecrets" . | indent 6 }}
