@@ -163,7 +163,7 @@ elasticsearch:
       initialDelaySeconds: 60
       periodSeconds: 10
     nodeSelector: {}
-    annotations: {}
+    podAnnotations: {}
 
   data:
     enabled: true
@@ -191,7 +191,7 @@ elasticsearch:
       initialDelaySeconds: 60
       periodSeconds: 10
     nodeSelector: {}
-    annotations: {}
+    podAnnotations: {}
     
   client:
     enabled: true
@@ -246,7 +246,7 @@ elasticsearch:
       initialDelaySeconds: 60
       periodSeconds: 10
     nodeSelector: {}
-    annotations: {}
+    podAnnotations: {}
 
   config: {}
     ## Example Config
