@@ -4,8 +4,9 @@ engine: gotpl
 kubeVersion: ^1.10.0-0
 maintainers:
 - email: derek.heldt-werle@viasat.com
+  name: Derek Heldt-Werle
 - email: kalvin.chau@viasat.com
-  name: OpenDistro ES Maintainers
+  name: Kalvin Chau
 name: opendistro-es
 sources:
 - https://pages.git.viasat.com/ATG/charts
