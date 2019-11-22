@@ -1,5 +1,5 @@
 appVersion: 1.0.0
-description: 'Opendistro Elasticsearch'
+description: 'Open Distro for Elasticsearch'
 engine: gotpl
 kubeVersion: ^1.10.0-0
 maintainers:
