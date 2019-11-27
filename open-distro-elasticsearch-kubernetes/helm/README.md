@@ -1,3 +1,18 @@
+<!---
+Copyright <2019> Viasat, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License").
+You may not use this file except in compliance with the License.
+A copy of the License is located at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+or in the "license" file accompanying this file. This file is distributed
+on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. See the License for the specific language governing
+permissions and limitations under the License.
+-->
+
 # Opendistro Elasticsearch
 This chart installs [Opendistro Kibana](https://opendistro.github.io/for-elasticsearch-docs/docs/kibana/) + [Opendistro Elasticsearch](https://opendistro.github.io/for-elasticsearch-docs/docs/elasticsearch/) with configurable TLS, RBAC, and more.
 Due to the uniqueness of different users environments, this chart aims to cater to a number of different use cases and setups.
