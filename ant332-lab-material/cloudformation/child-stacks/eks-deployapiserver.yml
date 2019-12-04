@@ -1,0 +1,144 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Amazon AWS Observability Workshop Config Mgmt Instance
+Parameters:
+  VPCID:
+    Type: "String"
+    Description: "ID of VPC that cluster deployment instance is deployed in. - default absent - OVERRIDE in root CFN."
+  SubnetID:
+    Type: "String"
+    Description: "Subnet ID to deploy cluster deployment instance in. - default absent - OVERRIDE in root CFN."
+  ControlPlaneSecurityGroup:
+    Type: "String"
+    Description: "Security Group that allows access to cluster control plane. - default absent - OVERRIDE in root CFN."
+  PrivateSubnetA:
+    Type: "String"
+    Description: "SubnetID for first private subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PrivateSubnetB:
+    Type: "String"
+    Description: "SubnetID for second private subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PublicSubnetA:
+    Type: "String"
+    Description: "SubnetID for first public subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PublicSubnetB:
+    Type: "String"
+    Description: "SubnetID for second public subnet of VPC. - default absent - OVERRIDE in root CFN."
+  VpcCIDR:
+    Type: "String"
+    Description: "CIDR block of VPC. - default absent - OVERRIDE in root CFN."
+  ServiceLinkedRoleARN:
+    Type: "String"
+    Description: "ARN of Service linked role for EKS."
+Mappings:
+  RegionMap:
+    eu-central-1:
+      AMI: ami-0233214e13e500f77
+    ap-southeast-1:
+      AMI: ami-08569b978cc4dfa10
+    eu-west-1:
+      AMI: ami-047bb4163c506cd98
+    ap-northeast-1:
+      AMI: ami-06cd52961ce9f0d85
+Resources:
+  ConfigHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - RegionMap
+        - Ref: AWS::Region
+        - AMI
+      InstanceType: 't2.large'
+      SourceDestCheck: false
+      SubnetId: !Ref SubnetID
+      SecurityGroupIds:
+        - !Ref ConfigHostSecurityGroup
+      IamInstanceProfile: !Ref ConfigInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvdcz
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 10
+            DeleteOnTermination: true
+            Encrypted: true
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-boothook
+          #!/bin/bash
+          export AWS_DEFAULT_REGION=eu-west-1
+          wget https://ant332.s3.amazonaws.com/cfn/eks-apiserver.yml
+          aws cloudformation deploy --template-file eks-apiserver.yml --stack-name eks-apiserver-${AWS::AccountId} --parameter-overrides ControlPlaneSecurityGroup=${ControlPlaneSecurityGroup} PrivateSubnetA=${PrivateSubnetA} PrivateSubnetB=${PrivateSubnetB} PublicSubnetA=${PublicSubnetA} PublicSubnetB=${PublicSubnetB} VpcCIDR=${VpcCIDR} ServiceRoleARN=${ServiceLinkedRoleARN} --capabilities CAPABILITY_NAMED_IAM --region eu-west-1
+          sudo /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ConfigHost --region eu-west-1
+
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT2H
+
+  ConfigInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref DeployServerRole
+
+  DeployServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref DeployServerPolicy
+
+  DeployServerPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: AllowServiceAccess
+            Effect: Allow
+            Action:
+              - cloud9:*
+              - cloudformation:*
+              - ec2:*
+              - eks:*
+              - es:*
+              - kms:*
+              - lambda:*
+              - logs:*
+              - s3:*
+              - ssm:*
+              - ssmmessages:*
+            Resource: "*"
+          -
+            Sid: AllowPassRoleAccess
+            Effect: Allow
+            Action:
+              - iam:GetRole
+              - iam:PassRole
+            Resource: !Ref ServiceLinkedRoleARN
+
+  ConfigHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'Security group for the Config host'
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+Outputs:
+  DeployRole:
+    Description: 'The name of the EKS deploy role'
+    Value: !Ref DeployServerRole

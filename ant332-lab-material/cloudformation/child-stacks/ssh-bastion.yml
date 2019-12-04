@@ -1,0 +1,177 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Amazon AWS Kibana SSH Tunnel Instance
+Parameters:
+  VPCID:
+    Type: "String"
+    Description: "ID of VPC that SSH bastion is deployed in. - default absent - OVERRIDE in root CFN."
+  SubnetID:
+    Type: "String"
+    Description: "Subnet ID to SSH bastion deployed in. - default absent - OVERRIDE in root CFN."
+Mappings:
+  RegionMap:
+    eu-central-1:
+      AMI: ami-0233214e13e500f77
+    ap-southeast-1:
+      AMI: ami-08569b978cc4dfa10
+    eu-west-1:
+      AMI: ami-047bb4163c506cd98
+    ap-northeast-1:
+      AMI: ami-06cd52961ce9f0d85
+Resources:
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - RegionMap
+        - Ref: AWS::Region
+        - AMI
+      KeyName: BastionKeyPair
+      InstanceType: 't2.large'
+      SourceDestCheck: false
+      SubnetId: !Ref SubnetID
+      SecurityGroupIds:
+        - !Ref BastionHostSecurityGroup
+      IamInstanceProfile: !Ref BastionInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvdcz
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 10
+            DeleteOnTermination: true
+            Encrypted: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          export AWS_DEFAULT_REGION=eu-west-1
+          yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+
+  BastionInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref BastionRole
+
+  BastionHostEIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: standard
+      InstanceId: !Ref BastionHost
+
+  BastionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+        - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser'
+      Policies:
+        - PolicyName: gitlab-runner
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bastion/default/*'
+
+  BastionHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'Security group for the bastion host'
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+  PrivateKey:
+    Type: Custom::RSAKey
+    Properties:
+      Name: /bastion/default/private-key
+      RefreshOnUpdate: false
+      ServiceToken: !GetAtt CFNSecretProvider.Arn
+
+  KeyPair:
+    Type: Custom::KeyPair
+    DependsOn: PrivateKey
+    Properties:
+      Name: BastionKeyPair
+      PublicKeyMaterial: !GetAtt 'PrivateKey.PublicKey'
+      ServiceToken: !GetAtt CFNSecretProvider.Arn
+
+  CFNSecretProviderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+          Condition: {}
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: CFNCustomSecretProviderPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - iam:CreateAccessKey
+            - iam:UpdateAccessKey
+            - iam:DeleteAccessKey
+            - ssm:PutParameter
+            - ssm:GetParameter
+            - ssm:DeleteParameter
+            - ec2:ImportKeyPair
+            - ec2:DeleteKeyPair
+            Resource:
+            - '*'
+          - Effect: Allow
+            Action:
+            - kms:Encrypt
+            - kms:Decrypt
+            Resource:
+            - '*'
+
+  CFNSecretProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Sub 'binxio-public-${AWS::Region}'
+        S3Key: lambdas/cfn-secret-provider-0.13.2.zip
+      Handler: secrets.handler
+      MemorySize: 128
+      Role: !GetAtt 'CFNSecretProviderRole.Arn'
+      Runtime: python3.6
+      Timeout: 300
+
+  CFNSecretProviderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${CFNSecretProvider}'
+      RetentionInDays: 30
+
+Outputs:
+  PublicKey:
+    Description: The public key of the bastion host
+    Value: !GetAtt 'PrivateKey.PublicKey'
+  BastionHostPublicIp:
+    Value: !GetAtt BastionHost.PublicIp
+  BastionHostPublicDnsName:
+    Value: !GetAtt BastionHost.PublicDnsName

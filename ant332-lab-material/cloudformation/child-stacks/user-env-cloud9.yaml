@@ -1,0 +1,31 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to create a cloud9 dev environment.'
+Parameters:
+  EC2InstanceType:
+    Default: t2.large
+    Description: EC2 instance type on which IDE runs
+    Type: String
+  AutoHibernateTimeout:
+    Default: 2880
+    Description: How many minutes idle before shutting down the IDE
+    Type: Number
+  SubnetIdentifier:
+    Description: SubnetId
+    Type: String
+  OwnerPrincipalARN:
+    Description: Owner ARN of IAM Principal to access IDE
+    Type: String
+Resources:
+  IDE:
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      Repositories:
+      - RepositoryUrl: https://github.com/apsunke/ant332.git
+        PathComponent: ant332
+      Description: Cloud9 IDE
+      AutomaticStopTimeMinutes: !Ref AutoHibernateTimeout
+      SubnetId: !Ref SubnetIdentifier
+      InstanceType: !Ref EC2InstanceType
+      Name: !Sub "ant332-workshop-IDE-${AWS::AccountId}"
+      OwnerArn: !Ref OwnerPrincipalARN 

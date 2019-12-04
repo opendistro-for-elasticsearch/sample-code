@@ -1,0 +1,112 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AES Logging Solution - AES Domain.  **Attention** This template creates AWS resources that will incur charges on your account.
+Parameters:
+  ElasticsearchDomainName:
+    Description: Name of the Elasticsearch Domain you wish to create.
+    Type: String
+    MinLength: 3
+    MaxLength: 28
+    AllowedPattern: "^[a-z][-a-z0-9]*$"
+    Default: "aes-lab-domain"
+  VPCID:
+    Type: "String"
+    Description: "ID of VPC that Elasticsearch cluster is deployed in. - default absent - OVERRIDE in root CFN."
+  PrivateSubnetA:
+    Type: "String"
+    Description: "SubnetID for first private subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PrivateSubnetB:
+    Type: "String"
+    Description: "SubnetID for second private subnet of VPC. - default absent - OVERRIDE in root CFN."
+  VPCCIDR:
+    Type: "String"
+    Description: "CIDR block of VPC that Elasticsearch cluster is deployed in. - default absent - OVERRIDE in root CFN."
+Resources:
+  ElasticsearchSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Rules for allowing access to the ES cluster
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: !Ref VPCCIDR
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Join:
+            - ''
+            - - Fn::ImportValue:
+                  !Sub "${AWS::AccountId}-EnvTag"
+              - "-elasticsearch-sg"
+  ElasticsearchDomain:
+    Type: AWS::Elasticsearch::Domain
+    Properties:
+      DomainName:
+        !Ref ElasticsearchDomainName
+      ElasticsearchVersion: '6.3'
+      ElasticsearchClusterConfig:
+        DedicatedMasterEnabled: 'true'
+        InstanceCount: '2'
+        ZoneAwarenessEnabled: 'true'
+        InstanceType: i3.large.elasticsearch
+        DedicatedMasterType: m4.large.elasticsearch
+        DedicatedMasterCount: '3'
+      SnapshotOptions:
+        AutomatedSnapshotStartHour: '0'
+      AccessPolicies:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: "*"
+          Action:
+          - es:*
+          Resource:
+            Fn::Join:
+              - ''
+              - - 'arn:aws:es:'
+                - !Ref 'AWS::Region'
+                - ":"
+                - !Ref 'AWS::AccountId'
+                - ":domain/"
+                - !Ref ElasticsearchDomainName
+                - "/*"
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: 'true'
+      VPCOptions:
+        SubnetIds:
+          - !Ref PrivateSubnetA
+          - !Ref PrivateSubnetB
+        SecurityGroupIds:
+          - !Ref ElasticsearchSecurityGroup
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ''
+              - - Fn::ImportValue:
+                    !Sub "${AWS::AccountId}-EnvTag"
+                - "-elasticsearch-domain"
+Outputs:
+  StackName:
+    Description: This is the stack name.
+    Value:
+      !Ref 'AWS::StackName'
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-StackName"
+  ElasticsearchEndpoint:
+    Description: The endpoint of the Elasticsearch Domain
+    Value:
+      Fn::GetAtt:
+        - ElasticsearchDomain
+        - DomainEndpoint
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-ElasticsearchEndpoint"

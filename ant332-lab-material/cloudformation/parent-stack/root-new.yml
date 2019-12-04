@@ -1,0 +1,119 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Parent CFN Stack for ANT332 Workshop - AWS re:Invent 2019"
+Parameters:
+  Cloud9IAMPrincipalARN:
+    Description: 'ARN of IAM principal used to login to Cloud9 console, this will be whatever you use to open the Cloud9 IDE from your AWS console.'
+    Type: String
+Resources:
+  network:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/eks-vpc.yml"
+
+  elasticsearch:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/es-vpc-domain.yaml"
+      Parameters:
+        VPCID: !GetAtt network.Outputs.VpcId
+        PrivateSubnetA: !GetAtt network.Outputs.PrivateSubnetA
+        PrivateSubnetB: !GetAtt network.Outputs.PrivateSubnetB
+        VPCCIDR: !GetAtt network.Outputs.VpcCIDR
+    DependsOn: network
+
+  eksdeployapiserver:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/eks-deployapiserver.yml"
+      Parameters:
+        VPCID: !GetAtt network.Outputs.VpcId
+        SubnetID: !GetAtt network.Outputs.PublicSubnetA
+        ControlPlaneSecurityGroup: !GetAtt network.Outputs.SecurityGroups
+        PrivateSubnetA: !GetAtt network.Outputs.PrivateSubnetA
+        PrivateSubnetB: !GetAtt network.Outputs.PrivateSubnetB
+        PublicSubnetA: !GetAtt network.Outputs.PublicSubnetA
+        PublicSubnetB: !GetAtt network.Outputs.PublicSubnetB
+        VpcCIDR: !GetAtt network.Outputs.VpcCIDR
+        ServiceLinkedRoleARN: !GetAtt network.Outputs.EKSClusterRoleArn
+    DependsOn: network
+
+  eksworkernodes:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/eks-node-asg.yml"
+      Parameters:
+        ClusterControlPlaneSecurityGroup: !GetAtt network.Outputs.SecurityGroups
+        VpcId: !GetAtt network.Outputs.VpcId
+        PrivateSubnetA: !GetAtt network.Outputs.PrivateSubnetA
+        PrivateSubnetB: !GetAtt network.Outputs.PrivateSubnetB
+        PublicSubnetA: !GetAtt network.Outputs.PublicSubnetA
+        PublicSubnetB: !GetAtt network.Outputs.PublicSubnetB
+    DependsOn:
+      - network
+      - eksdeployapiserver
+      - elasticsearch
+
+  eksbootstrapper:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/cm-instance.yml"
+      Parameters:
+        VPCID: !GetAtt network.Outputs.VpcId
+        SubnetID: !GetAtt network.Outputs.PublicSubnetA
+        EKSWorkerNodeIAMRoleARN: !GetAtt eksworkernodes.Outputs.NodeInstanceRole
+        DeployRoleName: !GetAtt eksdeployapiserver.Outputs.DeployRole
+        Cloud9AdminARN: !GetAtt eksworkernodes.Outputs.Cloud9AdminArn
+    DependsOn:
+      - network
+      - eksdeployapiserver
+      - eksworkernodes
+      - elasticsearch
+
+  bastionhost:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/ssh-bastion.yml"
+      Parameters:
+        VPCID: !GetAtt network.Outputs.VpcId
+        SubnetID: !GetAtt network.Outputs.PublicSubnetA
+    DependsOn:
+      - network
+      - elasticsearch
+
+  ide:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "https://ant332.s3.amazonaws.com/cfn/user-env-cloud9.yaml"
+      Parameters:
+        SubnetIdentifier: !GetAtt network.Outputs.PublicSubnetA
+        OwnerPrincipalARN: !Ref Cloud9IAMPrincipalARN
+    DependsOn:
+      - network
+      - elasticsearch
+      - eksdeployapiserver
+      - eksworkernodes
+      - bastionhost
+      - eksbootstrapper
+
+Outputs:
+  StackRef:
+    Value: !Ref network
+  OutputFromNestedNetworkStack:
+    Value: !GetAtt network.Outputs.PrivateSubnetIds
+  StackRef:
+    Value: !Ref elasticsearch
+  OutputFromNestedESStack:
+    Value: !GetAtt elasticsearch.Outputs.ElasticsearchEndpoint
+  StackRef:
+    Value: !Ref bastionhost
+  OutputFromNestedBastionStack:
+    Value: !GetAtt bastionhost.Outputs.BastionHostPublicIp
+  StackRef:
+    Value: !Ref eksworkernodes
+  OutputCloud9AdminAccessKeyID:
+    Value: !GetAtt eksworkernodes.Outputs.Cloud9AdminAccessKeyID
+  OutputCloud9AdminSecretAccessKey:
+    Value: !GetAtt eksworkernodes.Outputs.Cloud9AdminSecretAccessKey
+  BastionHostPrivateKeyBucket:
+    Value: !GetAtt eksbootstrapper.Outputs.PrivateKeyBucketOut

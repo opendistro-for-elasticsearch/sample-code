@@ -1,0 +1,66 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amazon EKS API Server - Observability Workshop'
+Parameters:
+  ClusterName:
+    Description: 'Name of EKS Cluster. - default provided - DO NOT OVERRIDE.'
+    Type: String
+    Default: "observability-workshop"
+  ControlPlaneSecurityGroup:
+    Type: "String"
+    Description: "Security Group that allows access to cluster control plane. - default absent - OVERRIDE in root CFN."
+  PrivateSubnetA:
+    Type: "String"
+    Description: "SubnetID for first private subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PrivateSubnetB:
+    Type: "String"
+    Description: "SubnetID for second private subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PublicSubnetA:
+    Type: "String"
+    Description: "SubnetID for first public subnet of VPC. - default absent - OVERRIDE in root CFN."
+  PublicSubnetB:
+    Type: "String"
+    Description: "SubnetID for second public subnet of VPC. - default absent - OVERRIDE in root CFN."
+  VpcCIDR:
+    Type: "String"
+    Description: "CIDR block of VPC. - default absent - OVERRIDE in root CFN."
+  ServiceRoleARN:
+    Type: "String"
+    Description: "EKS service role ARN."
+Resources:
+  ControlPlaneIDEIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods to communicate with the cluster API Server
+      GroupId: !Ref ControlPlaneSecurityGroup
+      CidrIp: !Ref VpcCIDR
+      IpProtocol: tcp
+      ToPort: 443
+      FromPort: 443
+
+  EKSCluster:
+    Type: "AWS::EKS::Cluster"
+    Properties:
+      Name: !Ref ClusterName
+      Version: "1.14"
+      RoleArn: !Ref ServiceRoleARN
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref ControlPlaneSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnetA
+          - !Ref PrivateSubnetB
+          - !Ref PublicSubnetA
+          - !Ref PublicSubnetB
+
+Outputs:
+  EKSClusterName:
+    Description: 'The name of the EKS cluster'
+    Value: !Ref EKSCluster
+    Export:
+      Name: !Sub "${AWS::AccountId}-ClusterName"
+  EKSClusterEndPoint:
+    Description: 'The endpoint of the EKS cluster'
+    Value: !GetAtt EKSCluster.Endpoint
+    Export:
+      Name: !Sub "${AWS::AccountId}-ClusterEndpoint"

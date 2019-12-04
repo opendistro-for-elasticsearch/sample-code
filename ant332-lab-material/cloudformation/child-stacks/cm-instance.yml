@@ -1,0 +1,189 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Amazon AWS Observability Workshop Config Mgmt Instance
+Parameters:
+  VPCID:
+    Type: "String"
+    Description: "ID of VPC that config instance is deployed in. - default absent - OVERRIDE in root CFN."
+  SubnetID:
+    Type: "String"
+    Description: "Subnet ID to deploy config instance in. - default absent - OVERRIDE in root CFN."
+  EKSClusterName:
+    Type: "String"
+    Description: "Target EKS cluster name - default provided - DO NOT OVERRIDE."
+    Default: observability-workshop
+  EKSWorkerNodeIAMRoleARN:
+    Type: "String"
+    Description: "Worker nodes IAM role to bootstrap access for. - default absent - OVERRIDE in root CFN."
+  DeployRoleName:
+    Type: "String"
+    Description: "Name of IAM role for config instance to use in instance profile. - default absent - OVERRIDE in root CFN."
+  Cloud9AdminARN:
+    Type: "String"
+    Description: "ARN of Cloud9 Admin user to give EKS access to. - default absent - OVERRIDE in root CFN."
+Mappings:
+  RegionMap:
+    eu-central-1:
+      AMI: ami-0233214e13e500f77
+    ap-southeast-1:
+      AMI: ami-08569b978cc4dfa10
+    eu-west-1:
+      AMI: ami-047bb4163c506cd98
+    ap-northeast-1:
+      AMI: ami-06cd52961ce9f0d85
+Resources:
+  ConfigHost:
+    DependsOn:
+      - PrivateKeyBucket
+      - BucketPolicy
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          files:
+            /tmp/aws-auth-configmap.yml:
+              content: !Sub |
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: aws-auth
+                  namespace: kube-system
+                data:
+                  mapRoles: |
+                    - rolearn: ${EKSWorkerNodeIAMRoleARN}
+                      username: system:node:{{EC2PrivateDNSName}}
+                      groups:
+                        - system:bootstrappers
+                        - system:nodes
+                  mapUsers: |
+                    - userarn: ${Cloud9AdminARN}
+                      username: cloud9
+                      groups:
+                        - system:masters
+              mode: "000644"
+              owner: "root"
+              group: "root"
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - RegionMap
+        - Ref: AWS::Region
+        - AMI
+      InstanceType: 't2.large'
+      SourceDestCheck: false
+      SubnetId: !Ref SubnetID
+      SecurityGroupIds:
+        - !Ref ConfigHostSecurityGroup
+      IamInstanceProfile: !Ref ConfigInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvdcz
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 10
+            DeleteOnTermination: true
+            Encrypted: true
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-boothook
+          #!/bin/bash
+          export AWS_DEFAULT_REGION=eu-west-1
+          yum -y install python36
+          curl -O https://bootstrap.pypa.io/get-pip.py
+          python3 get-pip.py
+          export PATH=/usr/local/bin:$PATH
+          pip3 install --upgrade awscli
+          curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+          chmod +x ./kubectl
+          mv kubectl /usr/local/bin
+          yum -y install jq gettext
+          for command in kubectl jq envsubst
+            do
+              which $command &>/dev/null && echo "$command in path" || echo "$command NOT FOUND"
+            done
+          aws ssm get-parameter --name /bastion/default/private-key --with-decryption | jq -r '.Parameter.Value' > bastion.pem
+          openssl rsa -in bastion.pem -out bastion-rsav2
+          aws s3 cp bastion-rsav2 s3://ant332-priv-key-bucket-${AWS::AccountId}
+          curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator
+          chmod +x ./aws-iam-authenticator
+          mv aws-iam-authenticator /usr/local/bin
+          aws eks --region ${AWS::Region} update-kubeconfig --name ${EKSClusterName}
+          export KUBECONFIG=/root/.kube/config
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfigHost --region ${AWS::Region}
+          kubectl apply -f /tmp/aws-auth-configmap.yml
+          curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > install-helm.sh
+          chmod u+x install-helm.sh
+          ./install-helm.sh
+          kubectl create serviceaccount --namespace kube-system tiller
+          curl -O https://s3-us-west-1.amazonaws.com/eks-es-workshop/helm-cluster-admin-role
+          kubectl apply -f helm-cluster-admin-role
+          helm init --service-account tiller --history-max=5
+
+  ConfigInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref DeployRoleName
+
+  ConfigHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'Security group for the Config host'
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+  PrivateKeyBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub "ant332-priv-key-bucket-${AWS::AccountId}"
+
+  BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket:
+        Ref: "PrivateKeyBucket"
+      PolicyDocument:
+        Statement:
+        -
+          Sid: "AllowGetObject"
+          Action:
+            - "s3:GetObject"
+          Effect: "Allow"
+          Resource:
+            Fn::Join:
+              - ""
+              -
+                - "arn:aws:s3:::"
+                -
+                  Ref: "PrivateKeyBucket"
+                - "/*"
+          Principal:
+            AWS:
+              - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        -
+          Sid: "AllowPutObject"
+          Action:
+            - "s3:PutObject*"
+          Effect: "Allow"
+          Resource:
+            Fn::Join:
+              - ""
+              -
+                - "arn:aws:s3:::"
+                -
+                  Ref: "PrivateKeyBucket"
+                - "/*"
+          Principal:
+            AWS:
+              - !Sub "arn:aws:iam::${AWS::AccountId}:role/TeamRole"
+    DependsOn: PrivateKeyBucket
+
+Outputs:
+  PrivateKeyBucketOut:
+    Description: 'PrivateKeyBucketName'
+    Value: !Ref PrivateKeyBucket
