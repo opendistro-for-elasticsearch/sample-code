@@ -14,7 +14,8 @@ jobs:
     - uses: actions/checkout@v1
     - uses: actions/aws/kubectl@master
       with:
+        args: get pods
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
     - name: Run a one-line script
       run: |
-        kubectl get pods
+        echo "WTH"
