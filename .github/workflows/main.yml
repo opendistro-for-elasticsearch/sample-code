@@ -4,7 +4,6 @@ on:
   push:
     branches: 
       - github-actions
-
 jobs:
   deployment:
     runs-on: 'ubuntu-latest'
