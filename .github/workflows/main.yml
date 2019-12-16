@@ -16,8 +16,5 @@ jobs:
       with:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
     - name: Run a one-line script
-      run: echo Hello, world!
-    - name: Run a multi-line script
       run: |
-        echo Add other actions to build,
-        echo test, and deploy your project.
+        kubectl get pods
