@@ -22,7 +22,7 @@ jobs:
         release: 'nginx'
         namespace: 'default'
         chart: 'app'
-        token: '${{ secrets.TOKEN }}'
+        #token: '${{ secrets.TOKEN }}'
         values: |
           name: foobar
       env:
