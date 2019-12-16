@@ -6,16 +6,19 @@ on:
       - github-actions
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  deployment:
+    runs-on: 'ubuntu-latest'
     steps:
     - uses: actions/checkout@v1
-    - uses: actions/aws/kubectl@master
+
+    - name: 'Deploy'
+      uses: 'deliverybot/helm@v1'
       with:
-        args: get pods
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-    - name: Run a one-line script
-      run: |
-        echo "WTH"
+        release: 'nginx'
+        namespace: 'default'
+        chart: 'app'
+        token: '${{ secrets.TOKEN }}'
+        values: |
+          name: foobar
+      env:
+        KUBECONFIG_FILE: '${{ secrets.KUBECONFIG }}'
