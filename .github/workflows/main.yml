@@ -15,15 +15,18 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
+    - name: Run EKS
+      run: |
+        aws eks get-token --cluster-name saadHelmChart --region us-east-1
 
-    - name: 'Deploy'
-      uses: 'deliverybot/helm@v1'
-      with:
-        release: 'nginx'
-        namespace: 'default'
-        chart: 'app'
-        #token: '${{ secrets.TOKEN }}'
-        values: |
-          name: foobar
-      env:
-        KUBECONFIG_FILE: '${{ secrets.KUBECONFIG }}'
+    #- name: 'Deploy'
+    #  uses: 'deliverybot/helm@v1'
+    #  with:
+    #    release: 'nginx'
+    #    namespace: 'default'
+    #    chart: 'app'
+    #    #token: '${{ secrets.TOKEN }}'
+    #    values: |
+    #      name: foobar
+    #  env:
+    #    KUBECONFIG_FILE: '${{ secrets.KUBECONFIG }}'
