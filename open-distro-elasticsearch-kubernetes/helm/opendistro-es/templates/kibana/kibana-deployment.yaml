@@ -19,6 +19,7 @@ metadata:
   labels:
 {{ include "opendistro-es.labels.standard" . | indent 4 }}
   name: {{ template "opendistro-es.fullname" . }}-kibana
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.kibana.replicas }}
   template:

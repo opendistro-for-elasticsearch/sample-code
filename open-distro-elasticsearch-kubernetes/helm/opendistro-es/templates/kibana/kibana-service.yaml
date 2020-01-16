@@ -21,6 +21,7 @@ metadata:
   labels:
 {{ include "opendistro-es.labels.standard" . | indent 4 }}
   name: {{ template "opendistro-es.fullname" . }}-kibana-svc
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - name: kibana-svc

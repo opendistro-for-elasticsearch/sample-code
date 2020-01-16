@@ -18,6 +18,7 @@ metadata:
   labels:
 {{ include "opendistro-es.labels.standard" . | indent 4 }}
   name: {{ template "opendistro-es.fullname" . }}-kibana-rolebinding
+  namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
   name: {{ template "opendistro-es.kibana.serviceAccountName" . }}
