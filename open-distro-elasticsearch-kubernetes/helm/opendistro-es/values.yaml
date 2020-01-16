@@ -54,9 +54,9 @@ kibana:
       # kubernetes.io/ingress.class: nginx
       # kubernetes.io/tls-acme: "true"
     labels: {}
-    path: /
     hosts:
       - chart-example.local
+      # - chart-example.local/kibana
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:
