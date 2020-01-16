@@ -13,7 +13,7 @@
 # permissions and limitations under the License.
 
 {{- if .Values.elasticsearch.master.enabled }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
@@ -23,6 +23,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.elasticsearch.master.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "opendistro-es.fullname" . }}
+      role: master
   updateStrategy:
     type: {{ .Values.elasticsearch.master.updateStrategy }}
   serviceName: {{ template "opendistro-es.fullname" . }}-discovery
