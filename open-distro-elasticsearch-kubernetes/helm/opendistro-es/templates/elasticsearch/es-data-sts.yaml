@@ -13,7 +13,7 @@
 # permissions and limitations under the License.
 
 {{ if .Values.elasticsearch.data.enabled }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
@@ -24,6 +24,10 @@ metadata:
 spec:
   serviceName: {{ template "opendistro-es.fullname" . }}-data-svc
   replicas: {{ .Values.elasticsearch.data.replicas }}
+  selector: 
+    matchLabels:
+{{ include "opendistro-es.labels.standard" . | indent 6 }}
+      role: data
   updateStrategy:
     type: {{ .Values.elasticsearch.data.updateStrategy }}
   template:
@@ -60,7 +64,7 @@ spec:
           privileged: true
       - name: fixmount
         command: [ 'sh', '-c', 'chown -R 1000:1000 /usr/share/elasticsearch/data' ]
-        image: busybox
+        image: {{ .Values.elasticsearch.initContainer.image }}:{{ .Values.elasticsearch.initContainer.imageTag }}
         volumeMounts:
           - mountPath: /usr/share/elasticsearch/data
             name: data
