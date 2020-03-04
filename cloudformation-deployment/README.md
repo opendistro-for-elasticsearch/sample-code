@@ -1,6 +1,6 @@
 # Open Distro for Elasticsearch CloudFormation Templates
 
-These templates create a full Open Distro for Elasticsearch deployment, including secure networking provided through VPC, configurable data nodes, master  nodes and a client node. The client node provides Kibana access with a public IP  address.
+These templates create a full Open Distro for Elasticsearch cluster, including secure networking provided through VPC, configurable data nodes, master nodes, and client nodes. The client nodes provide also run Kibana server, providing Kibana access with a public IP  address.
 
 ## Template descriptions
 
@@ -14,7 +14,7 @@ This is the root stack, that you deploy directly via the CloudFormation console.
 
 ## network.json
 
-Deploys an [Amazon VPC](https://aws.amazon.com/vpc/) to provide secure networking for the Open Distro for Elasticsearch cluster. The VPC spans 2 availability zones, with a public and a private subnet in each of those zones. The stack adds an Internet Gateway for outbound traffic and a NAT gateway for inbound traffic. EC Instances in the public subnet can have public IP addresses; the seed node, and the client node are publicly accessible.
+Deploys an [Amazon VPC](https://aws.amazon.com/vpc/) to provide secure networking for the Open Distro for Elasticsearch cluster. The VPC spans 2 availability zones, with a public and a private subnet in each of those zones. The stack adds an Internet Gateway for outbound traffic and a NAT gateway for inbound traffic. EC2 instances in the public subnet can have public IP addresses; the seed node, and the client nodes are publicly accessible.
 
 ## seed.json
 
@@ -30,7 +30,7 @@ Deploys an auto scaled group of master nodes. Initially it deploys 2 instances. 
 
 ## client-nodes.json
 
-Deploys a single instance with a public IP address in the public subnet of the VPC. This instance joins the cluster as a client node. It also runs Kibana server.
+Deploys an auto scaled group of client nodes with public IP addresses in the public subnet of the VPC. These instances also join the cluster as client nodes. The client nodes run Kibana server.
 
 # To use this stack
 
@@ -63,13 +63,12 @@ Edit `od4es.json`, replacing the `TemplateURL`'s bucket `odfe-cfn` with the [reg
 
 ### Put the templates in your bucket
 
-\- Edit `package-to-s3.sh`, replacing the bucket name in the first line `bucket=_bucket_name_` with the bucket name from the bucket you created above. 
-\- Make the script executable `chmod u+x package-to-s3.sh`
-\- Run `./package-to-s3.sh` to send all the templates to your bucket.
+\- Edit `package-to-s3.sh`, replacing the bucket name in the first line `bucket=_bucket_name_` with the bucket name from the bucket you created above.  
+\- Make the script executable `chmod u+x package-to-s3.sh`  
+\- Run `./package-to-s3.sh` to send all the templates to your bucket.  
 
 ### Create the stack
 
-\- Navigate to the AWS CloudFormation console.
-\- Click *Create Stack*
-\- Use the S3 URL `https://s3-<region endpoint>.amazonaws.com/<your bucket>/od4es.json`
-
+\- Navigate to the AWS CloudFormation console.  
+\- Click *Create Stack*  
+\- Use the S3 URL `https://s3-<region endpoint>.amazonaws.com/<your bucket>/od4es.json`  

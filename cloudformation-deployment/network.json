@@ -311,6 +311,11 @@
                     "CidrIp": "0.0.0.0\/0"
                 }, {
                     "IpProtocol": "tcp",
+                    "FromPort": "9600",
+                    "ToPort": "9600",
+                    "CidrIp": "0.0.0.0\/0"
+                }, {
+                    "IpProtocol": "tcp",
                     "FromPort": "22",
                     "ToPort": "22",
                     "CidrIp": {

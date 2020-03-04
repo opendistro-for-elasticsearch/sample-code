@@ -105,10 +105,10 @@
                                 "command": "echo \"deb https://d3g5vo6xdbdb9a.cloudfront.net/apt stable main\" | tee -a /etc/apt/sources.list.d/opendistroforelasticsearch.list"
                             },
                             "060-download-es-oss": {
-                                "command": "wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.2.0-amd64.deb"
+                                "command": "wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.2.1-amd64.deb"
                             },
                             "070-install-es-oss": {
-                                "command": "yes | dpkg -i elasticsearch-oss-7.2.0-amd64.deb"
+                                "command": "yes | dpkg -i elasticsearch-oss-7.2.1-amd64.deb"
                             }
                         }
                     },
@@ -256,6 +256,17 @@
                     { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PublicSubnet0"}},
                     { "Fn::ImportValue" : {"Fn::Sub": "${NetworkStackName}-PublicSubnet1"}}
                 ]
+            }
+        }
+    },
+    "Outputs": {
+        "AutoScalingGroup": {
+            "Description": "Client nodes autoscaling group.",
+            "Value": {"Ref": "ClientNodesASG"},
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-ClientNodesASG"
+                }
             }
         }
     }
