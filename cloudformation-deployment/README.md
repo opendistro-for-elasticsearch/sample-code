@@ -36,7 +36,7 @@ Deploys an auto scaled group of client nodes with public IP addresses in the pub
 
 ### Create an S3 bucket
 
-\- Clone or download the repository.  
+\- Clone or download the repository.
 \- Create an S3 bucket to hold the templates, in the region you want to deploy the stack.  You can use the AWS Console to create a bucket. Or, if you have [installed and configured the AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html), you can run the command  
 
 ```aws s3 mb <your bucket> --region <desired region>```
@@ -72,4 +72,3 @@ Edit `od4es.json`, replacing the `TemplateURL`'s bucket `odfe-cfn` with the [reg
 \- Navigate to the AWS CloudFormation console.  
 \- Click *Create Stack*  
 \- Use the S3 URL `https://s3-<region endpoint>.amazonaws.com/<your bucket>/od4es.json`  
-
