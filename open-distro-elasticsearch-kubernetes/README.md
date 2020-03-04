@@ -11,6 +11,7 @@ kubectl apply -f 10-es-namespace.yml
 kubectl apply -f 20-es-svc-discovery.yml
 kubectl apply -f 20-es-service-account.yml
 kubectl apply -f 25-es-sc-gp2.yml
+kubectl apply -f 30-es-configmap.yml
 kubectl apply -f 35-es-service.yml
 ```
 
