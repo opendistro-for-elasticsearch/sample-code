@@ -1,0 +1,163 @@
+{
+    "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 1
+    },
+    "mappings": {
+        "properties": {
+            "accessory": {
+                "type": "boolean"
+            },
+            "alternative_names": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "artists": {
+                "type": "text"
+            },
+            "bgg_rank": {
+                "type": "integer"
+            },
+            "boardgame_rank": {
+                "type": "integer"
+            },
+            "categories": {
+                "type": "keyword"
+            },
+            "comments": {
+                "type": "text"
+            },
+            "description": {
+                "type": "text"
+            },
+            "designers": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword"
+                    }
+                }
+            },
+            "expansion": {
+                "type": "boolean"
+            },
+            "families": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "keyword"
+                    }
+                }
+            },
+            "id": {
+                "type": "integer"
+            },
+            "image": {
+                "type": "keyword"
+            },
+            "implementations": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "max_players": {
+                "type": "integer"
+            },
+            "max_playing_time": {
+                "type": "integer"
+            },
+            "mechanics": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "min_age": {
+                "type": "integer"
+            },
+            "min_players": {
+                "type": "integer"
+            },
+            "min_playing_time": {
+                "type": "integer"
+            },
+            "name": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "playing_time": {
+                "type": "integer"
+            },
+            "publishers": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "rating_average": {
+                "type": "float"
+            },
+            "rating_average_weight": {
+                "type": "float"
+            },
+            "rating_bayes_average": {
+                "type": "float"
+            },
+            "rating_median": {
+                "type": "float"
+            },
+            "rating_num_weights": {
+                "type": "integer"
+            },
+            "rating_stddev": {
+                "type": "float"
+            },
+            "thumbnail": {
+                "type": "keyword"
+            },
+            "users_commented": {
+                "type": "integer"
+            },
+            "users_owned": {
+                "type": "integer"
+            },
+            "users_rated": {
+                "type": "integer"
+            },
+            "versions": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "videos": {
+                "type": "keyword",
+                "fields": {
+                    "text": {
+                        "type": "text"
+                    }
+                }
+            },
+            "year": {
+                "type": "integer"
+            }
+        }
+    }
+}
