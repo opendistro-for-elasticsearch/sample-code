@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 '''
 Provides the BGGManager class. The BGGManager class is a wrapper around the
 boardgamegeek2 API. Init with an ids file, a names file, and a details file.
@@ -156,7 +157,17 @@ class BGGManager():
                                                len(self._names)))
 
     def _download_and_save_game_details(self):
-        # Make these cmd line params?
+        ''' Downloads game details from the BoardgameGeek API. This takes the
+            ids and splits them into chunks of 100 so that it can call the BGG
+            batch API for retrieval.
+            After retrieving the game details, this reformats them as a dict for
+            easier transmission to ES.
+            I made the decision to store the text JSON of the details instead of
+            pickling or storing in some other binary format. This facilitates
+            quickly grepping the source data as well as processing to generate
+            test sets.
+            A bunch of the parameters (e.g. group size) might be better specified
+            on the command line. For simplicity, they're hard-coded here.'''
         n = 0
         chunk_size = 100
         with open(self._details_file, 'w') as details_file:
@@ -174,6 +185,7 @@ class BGGManager():
                         print('Exception getting details. Skipping "{}".'.format(g.name))
 
     def _load_saved_game_details(self):
+        ''' Loads the game details from the JSON file where they are stored. '''
         self._details = list()
         with open(self._details_file, 'r') as f_in:
             for line in f_in:
@@ -182,6 +194,9 @@ class BGGManager():
         print("Loaded {} game records".format(len(self._details)))
 
     def load_game_details(self, download=False):
+        ''' Entry point for downloading or loading the game details. Specify
+            download=True to pull from BGG or download=False to load a previous
+            data set. '''
         if download:
             if not self._ids or not self._names:
                 # TODO: Better exception
@@ -191,6 +206,7 @@ class BGGManager():
             self._load_saved_game_details()
 
     def game_details(self):
+        ''' Iterator over the game details. Details must be loaded first. '''
         if not self._details:
             raise ValueError('Trying to send iterate game details, but none loaded')
         for detail in self._details:
