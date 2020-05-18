@@ -10,6 +10,10 @@ as well as the log line.
 '''
 
 
+from collections import namedtuple
+
+
+from es_sink.es_auth import ESNoAuth, ESSigV4Auth, ESHttpAuth
 from es_sink.transport_utils import now_pst
 
 
@@ -31,67 +35,73 @@ class SQSDescriptor():
         return self._region
 
 
+# Describes handling of indexes for the ESDescriptor class
+# es_v7             Use ES V7 APIs (no _type, mostly)
+# es_index:         For API calls that use an index
+# es_type:          For ES V6 clusters and calls that use a _type
+# timestamped:      For ES API calls, mostly writes, append _YY.MM.DD
+#                  to the index name
+IndexDescriptor = namedtuple('IndexgDescriptor', ['es_index', 'es_type',
+                                                  'es_v7', 'timestamped'])
+
 
 class ESDescriptor():
     '''Description of an Elasticsearch endpoint.'''
 
-    def __init__(self, endpoint, region=None, es_v7=False, es_index='',
-                 es_type='', timestamped=True, signed=True, 
-                 http_auth=None):
+    def __init__(self, endpoint, indexing_descriptor, region=None, auth=None):
         '''Describes an ELasticsearch sink.
 
            This could be refactored to be a little bit better. As of now, it
            supports Amazon ES endpoints as well as vanilla ES endpoints. It also
            supports ES V6 and ES V7 endpoints. These could be mixins.
 
-           endpoint:         The base url to send REST API calls
-           region:           For Amazon ES domains, the AWS region. E.g.
-                             us-west-2
-           es_v7:            Use ES V7 APIs (no _type, mostly)
-           es_index:         For API calls that use an index
-           es_type:          For ES V6 clusters and calls that use a _type
-           timestamped:      For ES API calls, mostly writes, append _YY.MM.DD
-                             to the index name
-           signed:           For Amazon ES domains, use SigV4 signing for
-                             REST API calls. Uses Boto3 and requests-aws4auth to
-                             pull credentials from the environment
-           http_auth:        A tuple with (username, password) to use in sending
-                             requests.'''
+           endpoint:            The base url to send REST API calls
+           region:              For Amazon ES domains, the AWS region. E.g.
+                                us-west-2
+           indexing_descriptor: An IndexingDescriptor as above, specifying the
+            `                   index name, es type, v7 status, and whether to
+                                create indices with a timestamped name
+           es_auth:             A subclass of the ESAuth class specifying how to
+                                handle authentication of requests sent to the
+                                Elasticsearch endpoint.
+        '''
         self._endpoint = endpoint
-        self._es_v7 = es_v7
-        self._es_index = es_index
-        self._es_type = es_type
-        self._region = region
-        self._signed = signed
-        self._timestamped = timestamped
-        self._http_auth = http_auth
+        self._indexing = indexing_descriptor
 
-    @property
-    def http_auth(self):
-        return self._http_auth
-    
+        self._auth = auth
+        if not auth:
+            self._auth = ESNoAuth()
+
+        if isinstance(auth, ESSigV4Auth) and not region:
+            raise ValueError('You must specify a region to use SigV4Signing')
+        self._region = region
+
+
+    def user_password(self):
+        '''Expose a method to retrieve the username/password.'''
+        if not self._auth or not isinstance(self._auth, ESHttpAuth):
+            raise ValueError('The descriptors authentication is not HTTP')
+        return self._auth.as_tuple()
 
     @property
     def region(self):
         '''The region of the Amazon ES domain'''
         return self._region
 
-    @property
     def signed(self):
         '''Should requests be signed with AWS SigV4 signing?'''
-        return self._signed
+        return isinstance(self._auth, ESSigV4Auth)
 
-    @property
     def timestamped(self):
-        return self._timestamped
-    
+        '''Returns true when the index names should carry a timestamp'''
+        return self._indexing.timestamped
 
     def _index_name(self):
         ''' Return es_index-YY.MM.DD. Not timezone-aware '''
-        if self._timestamped:
-            return "{}-{}".format(self._es_index,
+        if self.timestamped():
+            return "{}-{}".format(self._indexing.es_index,
                                   now_pst().strftime("%Y.%m.%d"))
-        return self._es_index
+        return self._indexing.es_index
 
     def base_url(self):
         ''' Returns the endpoint. Slash-terminated.'''
@@ -101,14 +111,14 @@ class ESDescriptor():
 
     def base_url_with_index(self):
         '''Returns the endpoint/index, slash terminated. '''
-        return '{}{}/'.format(self.base_url(), self._index_name())
+        return '{}{}/'.format(self.base_url(), self._indexing.es_index)
 
     def base_url_6(self):
         ''' Returns the endpoint/index/type. Slash-terminated.
             Set timestamped=True to add the YY.MM.DD to the index
             name.'''
         return '{}{}/{}/'.format(self.base_url(), self._index_name(),
-                                 self._es_type)
+                                 self._indexing.es_type)
 
     def base_url_7(self):
         ''' Returns the endpoint/index/. Slash-terminated.
@@ -123,18 +133,21 @@ class ESDescriptor():
             name.'''
         return '{}{}/_bulk'.format(self.base_url(), self._index_name())
 
+    def _es_v7(self):
+        return self._indexing.es_v7
+
     def search_url(self):
         ''' d - an ESDescriptor. Returns the base url with
             <es_index>/<es_type>/_search handles es v7 by removing the
             type. Set timestamped=True to add the YY.MM.DD to the index
             name.'''
-        if self._es_v7:
+        if self._es_v7():
             return '{}{}/_search'.format(self.base_url(),
                                          self._index_name())
 
         return '{}{}/{}/_search'.format(self.base_url(),
                                         self._index_name(),
-                                        self._es_type)
+                                        self._indexing.es_type)
 
     ACTION_LINE_6 = '{{"index" : {{ "_index" : "{}", "_type": "{}" }} }}'
     ACTION_LINE_7 = '{{"index" : {{ "_index" : "{}" }} }}'
@@ -143,8 +156,8 @@ class ESDescriptor():
             part of a description. OTOH, all the info is here and it will
             save lots of duplicated code.
             Returns the "control" line for a _bulk request. '''
-        if self._es_v7:
+        if self._es_v7():
             return self.ACTION_LINE_7.format(self._index_name())
 
         return self.ACTION_LINE_6.format(self._index_name(),
-                                         self._es_type)
+                                         self._indexing.es_type)
