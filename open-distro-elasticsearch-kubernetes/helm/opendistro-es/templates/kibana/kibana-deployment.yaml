@@ -1,5 +1,6 @@
 # Copyright 2019 Viasat, Inc.
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2020 VEXXHOST, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License.
@@ -13,7 +14,7 @@
 # permissions and limitations under the License.
 
 {{- if .Values.kibana.enabled }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -21,6 +22,10 @@ metadata:
   name: {{ template "opendistro-es.fullname" . }}-kibana
 spec:
   replicas: {{ .Values.kibana.replicas }}
+  selector:
+    matchLabels:
+{{ include "opendistro-es.labels.standard" . | indent 6 }}
+      app: {{ template "opendistro-es.fullname" . }}-kibana
   template:
     metadata:
       labels:
