@@ -137,7 +137,7 @@ elasticsearch:
 
   initContainer:
     image: busybox
-    imageTag: 1.27.2
+    imageTag: 1
 
   ssl:
     transport:
