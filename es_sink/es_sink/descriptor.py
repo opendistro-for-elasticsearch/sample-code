@@ -40,16 +40,16 @@ class SQSDescriptor():
 # es_index:         For API calls that use an index
 # es_type:          For ES V6 clusters and calls that use a _type
 # timestamped:      For ES API calls, mostly writes, append _YY.MM.DD
-#                  to the index name
+#                   to the index name
 IndexDescriptor = namedtuple('IndexgDescriptor', ['es_index', 'es_type',
                                                   'es_v7', 'timestamped'])
 
 
 class ESDescriptor():
-    '''Description of an Elasticsearch endpoint.'''
+    """Description of an Elasticsearch endpoint."""
 
-    def __init__(self, endpoint, indexing_descriptor, region=None, auth=None):
-        '''Describes an ELasticsearch sink.
+    def __init__(self, endpoint, index_descriptor, region=None, auth=None):
+        """Describes an ELasticsearch sink.
 
            This could be refactored to be a little bit better. As of now, it
            supports Amazon ES endpoints as well as vanilla ES endpoints. It also
@@ -64,9 +64,12 @@ class ESDescriptor():
            es_auth:             A subclass of the ESAuth class specifying how to
                                 handle authentication of requests sent to the
                                 Elasticsearch endpoint.
-        '''
+        """
         self._endpoint = endpoint
-        self._indexing = indexing_descriptor
+
+        if not isinstance(index_descriptor, IndexDescriptor):
+            raise TypeError('Wrong type for index_descriptor')
+        self._indexing = index_descriptor
 
         self._auth = auth
         if not auth:
