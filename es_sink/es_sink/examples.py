@@ -32,7 +32,7 @@ AMAZON_ES_DESCRIPTOR = ESDescriptor(AMAZON_ES_ENDPOINT, amzn_index_descriptor,
                                     auth=amzn_auth)
 
 buffer2 = flushing_buffer.flushing_buffer_factory(AMAZON_ES_DESCRIPTOR,
-                                                 flush_trigger=1)
+                                                  flush_trigger=1)
 
 print('Sending 1 doc to Amazon ES')
 buffer2.add_log_line('{"field1": "value1", "field2": "value2"}')
