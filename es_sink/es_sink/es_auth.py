@@ -38,7 +38,7 @@ class ESSigV4Auth(ESAuth):
     # of specifying access/secret and tokens.
     # Possibly this could do something like: boto3.Session().get_credentials()
     def __init__(self):
-        super(ESNoAuth, self).__init__()
+        super(ESSigV4Auth, self).__init__()
 
 
 class ESHttpAuth(ESAuth):

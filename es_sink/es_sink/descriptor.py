@@ -41,8 +41,9 @@ class SQSDescriptor():
 # es_type:          For ES V6 clusters and calls that use a _type
 # timestamped:      For ES API calls, mostly writes, append _YY.MM.DD
 #                   to the index name
-IndexDescriptor = namedtuple('IndexgDescriptor', ['es_index', 'es_type',
-                                                  'es_v7', 'timestamped'])
+IndexDescriptor = namedtuple('IndexDescriptor', ['es_index', 'es_type',
+                                                 'es_v7', 'timestamped'],
+                                              defaults=(None, None, True, True))
 
 
 class ESDescriptor():
@@ -114,7 +115,7 @@ class ESDescriptor():
 
     def base_url_with_index(self):
         '''Returns the endpoint/index, slash terminated. '''
-        return '{}{}/'.format(self.base_url(), self._indexing.es_index)
+        return '{}{}/'.format(self.base_url(), self._index_name())
 
     def base_url_6(self):
         ''' Returns the endpoint/index/type. Slash-terminated.
