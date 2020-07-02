@@ -58,19 +58,30 @@ class TestDescriptor(unittest.TestCase):
         self.assertRaises(ValueError, desc.user_password)
         self.assertIsNone(desc.region)
 
-    def test_signing(self):
+    def test_auth(self):
         auth = es_auth.ESNoAuth()
         index_descriptor = es_sink.descriptor.IndexDescriptor()
         desc = es_sink.descriptor.ESDescriptor("https://localhost:9200/",
                                                index_descriptor,
                                                auth=auth)
-        self.assertFalse(desc.signed())
+        self.assertFalse(desc.is_signed())
+        self.assertFalse(desc.is_http_auth())
+
         auth = es_auth.ESSigV4Auth()
         desc = es_sink.descriptor.ESDescriptor("https://localhost:9200/",
                                                index_descriptor,
                                                region='us-west-2',
                                                auth=auth)
-        self.assertTrue(desc.signed())
+        self.assertTrue(desc.is_signed())
+        self.assertFalse(desc.is_http_auth())
+
+        auth = es_auth.ESHttpAuth('admin', 'adminpw')
+        desc = es_sink.descriptor.ESDescriptor("https://localhost:9200/",
+                                               index_descriptor,
+                                               region='us-west-2',
+                                               auth=auth)
+        self.assertFalse(desc.is_signed())
+        self.assertTrue(desc.is_http_auth())
 
     def test_index_naming_logs6(self):
         auth = es_auth.ESNoAuth()

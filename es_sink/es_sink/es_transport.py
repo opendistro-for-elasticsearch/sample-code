@@ -56,14 +56,13 @@ def _send_unsigned(method, url, body=None, http_auth=None):
                       headers={"Content-Type":"application/json"},
                       auth=http_auth,
                       verify=False)
-        print(result)
-    else:
-        (result, took_time) = \
-            wall_time(func, url, data=body,
-                      headers={"Content-Type":"application/json"},
-                      verify=False)
-        print(result)
-
+        return TransportResult(status=int(result.status_code),
+                               result_text=result.text, took_s=took_time,
+                               size=len(body))
+    (result, took_time) = \
+        wall_time(func, url, data=body,
+                  headers={"Content-Type":"application/json"},
+                  verify=False)
     return TransportResult(status=int(result.status_code),
                            result_text=result.text, took_s=took_time,
                            size=len(body))
@@ -88,16 +87,16 @@ class ESTransport():
 
         self._descriptor = descriptor
 
-        if descriptor.signed and descriptor.http_auth:
+        if descriptor.is_signed() and descriptor.is_http_auth():
             raise BadAuth('You can\'t specify both HTTP auth and signed requests')
 
-        if descriptor.signed and not descriptor.region:
+        if descriptor.is_signed() and not descriptor.region:
             raise ValueError('If you specify signed requests, you must also specify region')
 
     @property
-    def signed(self):
+    def is_signed(self):
         ''' Tracks whether to send signed requests '''
-        return self._descriptor.signed
+        return self._descriptor.is_signed()
 
     def send(self, method, url, service='es', body=''):
         '''Public method to dispatch between signed and unsigned.
@@ -107,7 +106,7 @@ class ESTransport():
            descriptor.base_url(). This might be easier, but introduces
            complexity in using the class (how to know how much of the URL to
            specify)'''
-        if self.signed:
+        if self.is_signed:
             return _send_signed(method, url, service, self._descriptor.region,
                                 body=body)
         return _send_unsigned(method, url, body=body,

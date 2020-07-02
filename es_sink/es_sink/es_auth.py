@@ -37,6 +37,8 @@ class ESSigV4Auth(ESAuth):
     # Placeholder - eventually should support all of the different auth methods
     # of specifying access/secret and tokens.
     # Possibly this could do something like: boto3.Session().get_credentials()
+
+    # TODO: Move the aws region into this class. Add a test case for region=None
     def __init__(self):
         super(ESSigV4Auth, self).__init__()
 

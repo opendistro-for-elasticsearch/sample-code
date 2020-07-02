@@ -92,9 +92,13 @@ class ESDescriptor():
         '''The region of the Amazon ES domain'''
         return self._region
 
-    def signed(self):
+    def is_signed(self):
         '''Should requests be signed with AWS SigV4 signing?'''
         return isinstance(self._auth, ESSigV4Auth)
+
+    def is_http_auth(self):
+        '''Should requests be signed with AWS SigV4 signing?'''
+        return isinstance(self._auth, ESHttpAuth)
 
     def timestamped(self):
         '''Returns true when the index names should carry a timestamp'''
