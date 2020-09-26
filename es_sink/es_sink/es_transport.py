@@ -20,6 +20,7 @@ from requests_aws4auth import AWS4Auth
 from es_sink.transport_result import TransportResult
 from es_sink.transport_exceptions import BadHTTPMethod
 from es_sink.transport_utils import wall_time, valid_request_body
+from es_sink.es_auth import ESAuth
 
 
 def _get_requests_function(method):
@@ -110,4 +111,4 @@ class ESTransport():
             return _send_signed(method, url, service, self._descriptor.region,
                                 body=body)
         return _send_unsigned(method, url, body=body,
-                              http_auth=self._descriptor.http_auth)
+                              http_auth=self._descriptor._auth.auth_creds())

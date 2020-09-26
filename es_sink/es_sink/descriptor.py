@@ -13,7 +13,7 @@ as well as the log line.
 from collections import namedtuple
 
 
-from es_sink.es_auth import ESNoAuth, ESSigV4Auth, ESHttpAuth
+from es_sink.es_auth import ESAuth, ESNoAuth, ESSigV4Auth, ESHttpAuth
 from es_sink.transport_utils import now_pst
 
 
@@ -76,6 +76,10 @@ class ESDescriptor():
         if not auth:
             self._auth = ESNoAuth()
 
+        if not issubclass(type(auth), ESAuth):
+            raise ValueError('You must use the a child of the ESAuth class')
+
+
         if isinstance(auth, ESSigV4Auth) and not region:
             raise ValueError('You must specify a region to use SigV4Signing')
         self._region = region
@@ -85,7 +89,7 @@ class ESDescriptor():
         '''Expose a method to retrieve the username/password.'''
         if not self._auth or not isinstance(self._auth, ESHttpAuth):
             raise ValueError('The descriptors authentication is not HTTP')
-        return self._auth.as_tuple()
+        return self._auth.auth_creds()
 
     @property
     def region(self):
@@ -99,6 +103,10 @@ class ESDescriptor():
     def is_http_auth(self):
         '''Should requests be signed with AWS SigV4 signing?'''
         return isinstance(self._auth, ESHttpAuth)
+
+    def auth(self):
+        '''Return the auth object passed in to init'''
+        return self._auth
 
     def timestamped(self):
         '''Returns true when the index names should carry a timestamp'''

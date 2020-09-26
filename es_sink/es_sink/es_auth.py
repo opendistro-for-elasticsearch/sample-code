@@ -24,12 +24,19 @@ class ESAuth(ABC):
     def __init__(self):
         pass
 
+    @abstractmethod
+    def auth_creds(self):
+        pass
+
 
 class ESNoAuth(ESAuth):
     ''' Use to specify that no authentication will be added to the low-level
         transport.'''
     def __init__(self):
         super(ESNoAuth, self).__init__()
+
+    def auth_creds(self):
+        return None
 
 
 class ESSigV4Auth(ESAuth):
@@ -41,6 +48,11 @@ class ESSigV4Auth(ESAuth):
     # TODO: Move the aws region into this class. Add a test case for region=None
     def __init__(self):
         super(ESSigV4Auth, self).__init__()
+
+    def auth_creds(self):
+        '''Placeholder... this should implement boto-like determination of AWS
+           creds.'''
+        return None
 
 
 class ESHttpAuth(ESAuth):
@@ -58,5 +70,7 @@ class ESHttpAuth(ESAuth):
     def password(self):
         return self._password
 
-    def as_tuple(self):
+    def auth_creds(self):
         return (self._user, self._password)
+
+

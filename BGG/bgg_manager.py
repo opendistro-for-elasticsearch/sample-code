@@ -127,14 +127,14 @@ class BGGManager():
         self._names = set()
         small_letters = map(chr, range(ord('a'), ord('z')+1))
         for letter in small_letters:
-            things = bgg.search('{}*'.format(letter))
+            things = self._bgg.search('{}*'.format(letter))
             for thing in things:
                 self._ids.add(thing.id)
                 self._names.add(thing.name)
         with open(self._ids_file, 'wb') as ids_file:
-            pickle.dump(ids, ids_file)
+            pickle.dump(self._ids, ids_file)
         with open(self._names_file, 'wb') as names_file:
-            pickle.dump(names, names_file)
+            pickle.dump(self._names, names_file)
 
     def _load_saved_games(self):
         '''Loads the pickled game names and ids'''
@@ -171,8 +171,8 @@ class BGGManager():
         n = 0
         chunk_size = 100
         with open(self._details_file, 'w') as details_file:
-            for chunk in self.grouper(chunk_size, ids, fillvalue=None):
-                games = bgg.game_list(game_id_list=list(chunk))
+            for chunk in self.grouper(chunk_size, self._ids, fillvalue=None):
+                games = self._bgg.game_list(game_id_list=list(chunk))
                 n += chunk_size
                 print('Downloaded {} games.'.format(n))
                 for g in games:
