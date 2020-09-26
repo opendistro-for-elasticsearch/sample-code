@@ -64,6 +64,7 @@ def _send_unsigned(method, url, body=None, http_auth=None):
         wall_time(func, url, data=body,
                   headers={"Content-Type":"application/json"},
                   verify=False)
+        print(result)
     return TransportResult(status=int(result.status_code),
                            result_text=result.text, took_s=took_time,
                            size=len(body))
