@@ -432,6 +432,67 @@ All values defined under `elasticsearch.loggingConfig` will be converted to yaml
 #### log4j2.properties Config
 All values defined under `elasticsearch.log4jConfig` will be mounted into the config directory.
 
+### How to use the keystore?
+
+#### Basic example
+
+Create the secret, the key name needs to be the keystore key path. In this
+example we will create a secret from a file and from a literal string.
+
+```
+kubectl create secret generic encryption-key --from-file=xpack.watcher.encryption_key=./watcher_encryption_key
+kubectl create secret generic slack-hook --from-literal=xpack.notification.slack.account.monitoring.secure_url='https://hooks.slack.com/services/asdasdasd/asdasdas/asdasd'
+```
+
+To add these secrets to the keystore:
+
+```
+keystore:
+  - secretName: encryption-key
+  - secretName: slack-hook
+```
+
+#### Multiple keys
+
+All keys in the secret will be added to the keystore. To create the previous
+example in one secret you could also do:
+
+```
+kubectl create secret generic keystore-secrets --from-file=xpack.watcher.encryption_key=./watcher_encryption_key --from-literal=xpack.notification.slack.account.monitoring.secure_url='https://hooks.slack.com/services/asdasdasd/asdasdas/asdasd'
+```
+
+```
+keystore:
+  - secretName: keystore-secrets
+```
+
+#### Custom paths and keys
+
+If you are using these secrets for other applications (besides the Elasticsearch
+keystore) then it is also possible to specify the keystore path and which keys
+you want to add. Everything specified under each `keystore` item will be passed
+through to the `volumeMounts` section for mounting the [secret][]. In this
+example we will only add the `slack_hook` key from a secret that also has other
+keys. Our secret looks like this:
+
+```
+kubectl create secret generic slack-secrets --from-literal=slack_channel='#general' --from-literal=slack_hook='https://hooks.slack.com/services/asdasdasd/asdasdas/asdasd'
+```
+
+We only want to add the `slack_hook` key to the keystore at path
+`xpack.notification.slack.account.monitoring.secure_url`:
+
+```
+keystore:
+  - secretName: slack-secrets
+    items:
+    - key: slack_hook
+      path: xpack.notification.slack.account.monitoring.secure_url
+```
+
+You can also take a look at the [config example][] which is used as part of the
+automated testing pipeline.
+
 ### Configuration
 The following table lists the configurable parameters of the opendistro elasticsearch chart and their default values.
 
@@ -553,7 +614,7 @@ The following table lists the configurable parameters of the opendistro elastics
 | `elasticsearch.configDirectory`                           | Location of elasticsearch configuration                                                                                                                  | `"/usr/share/elasticsearch/config"`                                     |
 | `elasticsearch.maxMapCount`                               | elasticsearch max_map_count                                                                                                                              | `262144`                                                                |
 | `elasticsearch.extraEnvs`                                 | Extra environments variables to be passed to elasticsearch services                                                                                      | `[]`                                                                    |
-
+| `elasticsearch.keystore`                                  | Allows you map Kubernetes secrets into the keystore. See the [how to use the keystore]                                                                   | `[]`
 
 ## Acknowledgements
 * [Kalvin Chau](https://github.com/kalvinnchau) (Software Engineer - Viasat) for all his help with the Kubernetes internals, certs, and debugging

@@ -68,6 +68,44 @@ spec:
         volumeMounts:
           - mountPath: /usr/share/elasticsearch/data
             name: data
+      {{ if .Values.elasticsearch.keystore }}
+      - name: keystore
+        image: {{ .Values.elasticsearch.image }}:{{ .Values.elasticsearch.imageTag }}
+        command:
+          - sh
+          - -c
+          - |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            elasticsearch-keystore create
+            for file in /tmp/keystoreSecrets/*/*; do
+              key=$(basename $file)
+              echo "Adding file $file to keystore key $key"
+              elasticsearch-keystore add-file "$key" "$file"
+            done
+            # Add the bootstrap password since otherwise the Elasticsearch entrypoint tries to do this on startup
+            if [ ! -z ${ELASTICSEARCH_PASSWORD+x} ]; then
+              echo 'Adding env $ELASTICSEARCH_PASSWORD to keystore as key bootstrap.password'
+              echo "$ELASTICSEARCH_PASSWORD" | elasticsearch-keystore add -x bootstrap.password
+            fi
+            cp -a /usr/share/elasticsearch/config/elasticsearch.keystore /tmp/keystore/
+        env:
+        - name: ELASTICSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.kibana.elasticsearchAccount.secret }}
+              key: password
+{{ if .Values.elasticsearch.extraEnvs }}
+{{ toYaml .Values.elasticsearch.extraEnvs | indent 5 }}
+{{ end }}
+        volumeMounts:
+        - name: keystore
+          mountPath: /tmp/keystore
+        {{- range .Values.elasticsearch.keystore }}
+        - name: keystore-{{ .secretName }}
+          mountPath: /tmp/keystoreSecrets/{{ .secretName }}
+        {{- end }}
+{{ end }}
       # Weighted anti-affinity to disallow deploying client node to the same worker node as master node
       affinity:
         podAntiAffinity:
@@ -112,6 +150,16 @@ spec:
               resource: limits.cpu
         - name: ES_JAVA_OPTS
           value: {{ .Values.elasticsearch.data.javaOpts }}
+        - name: ELASTICSEARCH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.kibana.elasticsearchAccount.secret }}
+              key: username
+        - name: ELASTICSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.kibana.elasticsearchAccount.secret }}
+              key: password
 {{- if .Values.elasticsearch.extraEnvs }}
 {{ toYaml .Values.elasticsearch.extraEnvs | indent 8 }}
 {{- end }}
@@ -181,6 +229,11 @@ spec:
           name: admin-certs
           subPath: admin-root-ca.pem
          {{- end }}
+        {{ if .Values.elasticsearch.keystore }}
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.keystore
+          name: keystore
+          subPath: elasticsearch.keystore
+        {{ end }}
       volumes:
       - name: config
         secret:
@@ -200,6 +253,14 @@ spec:
         secret:
           secretName: {{ .Values.elasticsearch.ssl.admin.existingCertSecret }}
       {{- end }}
+      {{- if .Values.elasticsearch.keystore }}
+      - name: keystore
+        emptyDir: {}
+      {{- range .Values.elasticsearch.keystore }}
+      - name: keystore-{{ .secretName }}
+        secret: {{ toYaml . | nindent 12 }}
+      {{- end }}
+      {{ end }}
   volumeClaimTemplates:
   - metadata:
       name: data
