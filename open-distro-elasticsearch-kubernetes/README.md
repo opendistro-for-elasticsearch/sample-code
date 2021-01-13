@@ -83,6 +83,21 @@ kubectl -n elasticsearch logs -f es-master-78f97f98d9-275sl
 If the log output contains the following message, it means that the Elasticsearch client nodes have clustered successfully:
 `[2019-04-04T06:35:57,180][INFO ][o.e.c.s.ClusterApplierService] [es-client-855f48886-75cz8] detected_master {es-master-78f97f98d9-kwqxt}`
 
+#### Elasticsearch client ingress
+
+To make elasticsearch accessible from outside the cluster you can enable ingress for its service.
+You should take into account that elasticsearch is waiting for https traffic from ingress despite its service port name is http so you need to tell your ingress controller to use https for this backend service, also ingress must skip TLS verify for this backend.
+Please refer to the documentation of your ingress. 
+
+For exmaple with traefik 2.3 you need to annotate elasticsearch client service with:
+```
+traefik.ingress.kubernetes.io/service.serversscheme: https
+```
+and disable TLS verify on traefik side with:
+```
+- "--serverstransport.insecureskipverify=true"
+```
+
 ### Elasticsearch Data Nodes
 
 Deploy the Elasticsearch data nodes using the command:
