@@ -1,4 +1,4 @@
-# Community
+# Sample-code
 
 We are using the community repo to track issues and requests for Open Distro for Elasticsearch, that are not covered by the existing repos that support the project. We welcome your ideas and suggestions for features or enhancements. 
 
