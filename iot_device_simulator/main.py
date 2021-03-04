@@ -28,9 +28,11 @@ import argparse
 import time
 
 from device import Device
-from flushing_es_buffer import FlushingESBuffer, ESDescriptor
 from sensor import SineSensor, ConstSensor, DriftingSensor, MonotonicSensor
-from transport import Transport
+from es_sink import flushing_buffer
+from es_sink.descriptor import ESDescriptor, IndexDescriptor
+from es_sink.es_transport import ESTransport
+from es_sink.es_auth import ESHttpAuth
 
 def get_args():
     description = 'Simulate devices with sensors and send data to Elasticsearch'
@@ -76,12 +78,15 @@ def make_device():
 
 if __name__ == '__main__':
     args = get_args()
-    buffer = FlushingESBuffer(
-        ESDescriptor(endpoint=args.endpoint, 
-                     es_index='logs',
-                     es_type='log'),
-        signed=args.signed_requests,
-        flush_trigger=args.batch_size)
+
+    # Create the flushing buffer
+    index_descriptor = IndexDescriptor(es_index='logs', es_v7=True)
+    es_descriptor = ESDescriptor(args.endpoint, index_descriptor=index_descriptor,
+                                 auth=ESHttpAuth('admin', 'admin'))
+    buffer = flushing_buffer.flushing_buffer_factory(es_descriptor,
+                                                     flush_trigger=args.batch_size)
+
+    # Create the set of devices
     devices = list() # pylint: disable=invalid-name
     for i in range(args.devices - 1):
         d = make_device()
@@ -100,3 +105,4 @@ if __name__ == '__main__':
             for sens_report in dev_report:
                 buffer.add_log_line(sens_report)
         time.sleep(1)
+    buffer.flush()

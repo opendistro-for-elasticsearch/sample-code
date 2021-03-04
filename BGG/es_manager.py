@@ -35,8 +35,9 @@ hey, it's demo code!
 
 
 from es_sink import flushing_buffer
-from es_sink.descriptor import ESDescriptor
+from es_sink.descriptor import ESDescriptor, IndexDescriptor
 from es_sink.es_transport import ESTransport
+from es_sink.es_auth import ESHttpAuth
 
 
 class ESManager():
@@ -46,12 +47,12 @@ class ESManager():
     def __init__(self):
         ''' Hard-coded the descriptor. This instantiates a FlushingBuffer to
             enable ES transport. '''
+        index_descriptor = IndexDescriptor(es_index='games',
+                                           es_v7=True,
+                                           timestamped=False)
         self.descriptor = ESDescriptor("https://localhost:9200/",
-                                       es_v7=True,
-                                       es_index='games',
-                                       timestamped=False,
-                                       signed=False,
-                                       http_auth=('admin', 'admin'))
+                                       index_descriptor=index_descriptor,
+                                       auth=ESHttpAuth('admin', 'admin'))
         self.buffer = flushing_buffer.flushing_buffer_factory(
             self.descriptor, flush_trigger=10000)
         self.raw_transport = ESTransport(self.descriptor)

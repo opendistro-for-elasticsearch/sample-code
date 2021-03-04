@@ -8,7 +8,12 @@ course, you can change that and send it to any Elasticsearch cluster.
 
 # Prerequisite
 
-You must download and install the es_sink library, available in this repo.
+This example uses the es_sink library, provided in this repo. To install,
+
+```
+> pip install <path_to_community_repo>/es_sink
+```
+
 
 # Usage
 

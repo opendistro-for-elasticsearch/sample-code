@@ -9,6 +9,12 @@ for buffering log lines and sending to Elasticsearch.
 
 The code requires Python 3
 
+This example uses the es_sink library, provided in this repo. To install,
+
+```
+> pip install <path_to_community_repo>/es_sink
+```
+
 
 ## Basic Usage
 
